@@ -52,7 +52,7 @@ export default function NuovoCanePage() {
       name: name.trim(),
       breed: breed.trim() || null,
       size,
-      weight_kg: finalWeight,
+      weight: finalWeight,
       notes: notes.trim() || null
     });
 

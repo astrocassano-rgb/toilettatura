@@ -69,7 +69,7 @@ export default function HomeClient() {
               </div>
               <div>
                 <p className="font-medium">Prenota e lava</p>
-                <p className="text-sm text-slate-400">Scegli la vasca e l'orario perfetto per te e il tuo cane.</p>
+                <p className="text-sm text-slate-400">Scegli la vasca e l&apos;orario perfetto per te e il tuo cane.</p>
               </div>
             </div>
           </CardContent>

@@ -84,7 +84,7 @@ export default function PrenotaColonneClient() {
       const { data } = await supabase.from("dogs").select("*").order("created_at", { ascending: false });
       if (data && data.length > 0) {
         setDogs(data);
-        if (!selectedDogId) setSelectedDogId(data[0].id);
+        if (!selectedDogId && data[0]?.id) setSelectedDogId(data[0].id);
       }
     }
     void loadDogs();

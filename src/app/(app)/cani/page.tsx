@@ -68,7 +68,7 @@ export default function CaniPage() {
                       <p className="text-sm font-semibold">{dog.name}</p>
                       <p className="mt-1 text-xs text-slate-300">
                         {dog.breed ? dog.breed : "Razza non indicata"} · {dog.size}
-                        {dog.weight_kg ? ` · ${dog.weight_kg} kg` : ""}
+                        {dog.weight ? ` · ${dog.weight} kg` : ""}
                       </p>
                       {dog.notes ? <p className="mt-2 text-xs text-slate-300">{dog.notes}</p> : null}
                     </div>
