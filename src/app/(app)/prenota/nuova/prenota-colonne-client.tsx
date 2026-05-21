@@ -59,7 +59,6 @@ function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
 
 export default function PrenotaColonneClient() {
   const router = useRouter();
-  const dogs = useDogsStore((s) => s.dogs);
 
   const calendarStart = useMemo(() => startOfLocalDay(new Date()), []);
   const calendar = useMemo(() => Array.from({ length: calendarDays }, (_, i) => addDays(calendarStart, i)), [calendarStart]);
@@ -67,11 +66,12 @@ export default function PrenotaColonneClient() {
   const [day, setDay] = useState<Date>(() => startOfLocalDay(new Date()));
   const [stations, setStations] = useState<Station[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [dogs, setDogs] = useState<Database["public"]["Tables"]["dogs"]["Row"][]>([]);
   const [availability, setAvailability] = useState<AvailabilityRow[]>([]);
   const [availabilityLoaded, setAvailabilityLoaded] = useState(false);
   const [availabilityHint, setAvailabilityHint] = useState<string | null>(null);
   const [serviceType, setServiceType] = useState<StationType | "">("");
-  const [selectedDogId, setSelectedDogId] = useState<string>(dogs[0]?.id ?? "");
+  const [selectedDogId, setSelectedDogId] = useState<string>("");
   const [durationMinutes, setDurationMinutes] = useState<number>(30);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -79,8 +79,16 @@ export default function PrenotaColonneClient() {
   const supabase = useMemo(() => tryCreateSupabaseBrowserClient(), []);
 
   useEffect(() => {
-    if (!selectedDogId && dogs[0]?.id) setSelectedDogId(dogs[0].id);
-  }, [dogs, selectedDogId]);
+    async function loadDogs() {
+      if (!supabase) return;
+      const { data } = await supabase.from("dogs").select("*").order("created_at", { ascending: false });
+      if (data && data.length > 0) {
+        setDogs(data);
+        if (!selectedDogId) setSelectedDogId(data[0].id);
+      }
+    }
+    void loadDogs();
+  }, [supabase, selectedDogId]);
 
   useEffect(() => {
     if (serviceType) return;

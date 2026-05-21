@@ -1,14 +1,38 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PawPrint, Plus, Trash2 } from "lucide-react";
-import { useDogsStore } from "@/store/dogs-store";
+import { tryCreateSupabaseBrowserClient } from "@/lib/supabase/optional";
+import type { Database } from "@/types/database";
+
+type Dog = Database["public"]["Tables"]["dogs"]["Row"];
 
 export default function CaniPage() {
-  const dogs = useDogsStore((s) => s.dogs);
-  const removeDog = useDogsStore((s) => s.removeDog);
+  const [dogs, setDogs] = useState<Dog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = tryCreateSupabaseBrowserClient();
+
+  useEffect(() => {
+    async function loadDogs() {
+      if (!supabase) return;
+      setLoading(true);
+      const { data } = await supabase.from("dogs").select("*").order("created_at", { ascending: false });
+      if (data) setDogs(data);
+      setLoading(false);
+    }
+    void loadDogs();
+  }, [supabase]);
+
+  const removeDog = async (id: string) => {
+    if (!supabase) return;
+    const { error } = await supabase.from("dogs").delete().eq("id", id);
+    if (!error) {
+      setDogs((prev) => prev.filter((d) => d.id !== id));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -44,7 +68,7 @@ export default function CaniPage() {
                       <p className="text-sm font-semibold">{dog.name}</p>
                       <p className="mt-1 text-xs text-slate-300">
                         {dog.breed ? dog.breed : "Razza non indicata"} · {dog.size}
-                        {dog.weightKg ? ` · ${dog.weightKg} kg` : ""}
+                        {dog.weight_kg ? ` · ${dog.weight_kg} kg` : ""}
                       </p>
                       {dog.notes ? <p className="mt-2 text-xs text-slate-300">{dog.notes}</p> : null}
                     </div>

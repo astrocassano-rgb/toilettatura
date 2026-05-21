@@ -8,7 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PawPrint, Save } from "lucide-react";
-import { useDogsStore, type DogSize } from "@/store/dogs-store";
+import { tryCreateSupabaseBrowserClient } from "@/lib/supabase/optional";
+import type { Database } from "@/types/database";
+
+type DogSize = Database["public"]["Enums"]["dog_size"];
 
 const sizes: { value: DogSize; label: string }[] = [
   { value: "SMALL", label: "Piccolo" },
@@ -19,15 +22,47 @@ const sizes: { value: DogSize; label: string }[] = [
 
 export default function NuovoCanePage() {
   const router = useRouter();
-  const addDog = useDogsStore((s) => s.addDog);
+  const supabase = tryCreateSupabaseBrowserClient();
 
   const [name, setName] = useState("");
   const [breed, setBreed] = useState("");
   const [size, setSize] = useState<DogSize>("MEDIUM");
   const [weightKg, setWeightKg] = useState<string>("");
   const [notes, setNotes] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const canSave = useMemo(() => name.trim().length >= 2, [name]);
+  const canSave = useMemo(() => name.trim().length >= 2 && !isSaving, [name, isSaving]);
+
+  const saveDog = async () => {
+    if (!supabase || !canSave) return;
+    setIsSaving(true);
+    
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      alert("Devi effettuare l'accesso per aggiungere un cane.");
+      setIsSaving(false);
+      return;
+    }
+
+    const weight = weightKg.trim() ? Number(weightKg.replace(",", ".")) : null;
+    const finalWeight = weight && Number.isFinite(weight) && weight > 0 ? Math.round(weight * 10) / 10 : null;
+
+    const { error } = await supabase.from("dogs").insert({
+      owner_id: userData.user.id,
+      name: name.trim(),
+      breed: breed.trim() || null,
+      size,
+      weight_kg: finalWeight,
+      notes: notes.trim() || null
+    });
+
+    setIsSaving(false);
+    if (!error) {
+      router.push("/cani");
+    } else {
+      alert("Errore durante il salvataggio: " + error.message);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -104,17 +139,7 @@ export default function NuovoCanePage() {
               className="flex-1"
               variant="primary"
               disabled={!canSave}
-              onClick={() => {
-                const weight = weightKg.trim() ? Number(weightKg.replace(",", ".")) : null;
-                addDog({
-                  name: name.trim(),
-                  breed: breed.trim(),
-                  size,
-                  weightKg: weight && Number.isFinite(weight) && weight > 0 ? Math.round(weight * 10) / 10 : null,
-                  notes: notes.trim()
-                });
-                router.push("/cani");
-              }}
+              onClick={saveDog}
               type="button"
             >
               <Save className="h-5 w-5" />
