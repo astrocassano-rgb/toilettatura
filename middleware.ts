@@ -22,11 +22,10 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Rotte protette (tutto ciò che è dentro /(app) tranne la home root, o comunque sezioni specifiche)
-  const isProtectedRoute = request.nextUrl.pathname.startsWith('/prenota') || 
-                           request.nextUrl.pathname.startsWith('/cani') || 
-                           request.nextUrl.pathname.startsWith('/wallet') || 
-                           request.nextUrl.pathname.startsWith('/profilo');
+  const isProtectedRoute = request.nextUrl.pathname.startsWith("/prenota/nuova") ||
+    request.nextUrl.pathname.startsWith("/cani") ||
+    request.nextUrl.pathname.startsWith("/wallet") ||
+    request.nextUrl.pathname.startsWith("/profilo");
 
   if (isProtectedRoute && !user) {
     const loginUrl = request.nextUrl.clone();
@@ -47,4 +46,3 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icons/).*)"]
 };
-
