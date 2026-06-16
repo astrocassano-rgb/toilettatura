@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import HomeClient from "./home-client";
@@ -9,7 +10,7 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   if ((user as any)?.app_metadata?.role === "admin") {
-    redirect("/admin");
+    redirect("/admin" as Route);
   }
 
   return <HomeClient />;
