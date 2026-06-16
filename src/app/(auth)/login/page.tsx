@@ -25,6 +25,11 @@ function buildAuthCallbackUrl(nextPath: string) {
   return `${window.location.origin}/login?next=${encodeURIComponent(nextPath)}`;
 }
 
+function buildPasswordResetUrl() {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}/reset-password`;
+}
+
 export default function LoginPage() {
   return (
     <Suspense fallback={<div className="mx-auto max-w-md px-4 py-10 text-sm text-slate-300">Caricamento...</div>}>
@@ -192,6 +197,24 @@ function LoginContent() {
     }
   };
 
+  const requestPasswordReset = async () => {
+    if (!supabase) return;
+    setMessage(null);
+    setCanResend(false);
+    if (!email) return setMessage("Inserisci la tua email e poi premi di nuovo per ricevere il link di reset.");
+    setLoading(true);
+    try {
+      const redirectTo = buildPasswordResetUrl();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) throw error;
+      setMessage("Ti abbiamo inviato il link per reimpostare la password. Controlla la posta e anche la cartella spam.");
+    } catch (e: any) {
+      setMessage(toFriendlyMessage(e, "Invio link di reset non riuscito."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-md px-4 py-10">
       <Card>
@@ -288,6 +311,10 @@ function LoginContent() {
                 Reinvia email di conferma
               </Button>
             ) : null}
+            <Button className="w-full" variant="secondary" type="button" onClick={() => void requestPasswordReset()} disabled={!isConfigured || loading}>
+              <Mail className="h-5 w-5" />
+              Recupera password
+            </Button>
             <Button className="w-full" variant="secondary" type="button" disabled>
               <Mail className="h-5 w-5" />
               Google / Apple (in arrivo)
