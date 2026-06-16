@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,7 +22,7 @@ function resolvePostLoginPath(nextPath: string, user: { app_metadata?: { role?: 
 
 function buildAuthCallbackUrl(nextPath: string) {
   if (typeof window === "undefined") return undefined;
-  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  return `${window.location.origin}/login?next=${encodeURIComponent(nextPath)}`;
 }
 
 export default function LoginPage() {
@@ -49,6 +49,68 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [canResend, setCanResend] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    const code = searchParams?.get("code");
+    const shouldHandleCode = Boolean(code);
+    const shouldHandleHash = typeof window !== "undefined" && Boolean(window.location.hash);
+
+    if (!shouldHandleCode && !shouldHandleHash) return;
+
+    void (async () => {
+      try {
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            setMessage(String(error.message || "Link non valido o scaduto. Genera un nuovo link e riprova."));
+            return;
+          }
+
+          const url = new URL(window.location.href);
+          url.searchParams.delete("code");
+          url.searchParams.delete("type");
+          window.history.replaceState({}, document.title, `${url.pathname}${url.search}`);
+        } else if (typeof window !== "undefined" && window.location.hash) {
+          const hash = window.location.hash.replace(/^#/, "");
+          const hashParams = new URLSearchParams(hash);
+
+          if (hashParams.get("error") || hashParams.get("error_code")) {
+            setMessage("Link non valido o scaduto. Genera un nuovo link e riprova.");
+            return;
+          }
+
+          const accessToken = hashParams.get("access_token");
+          const refreshToken = hashParams.get("refresh_token");
+          if (!accessToken || !refreshToken) {
+            setMessage("Link non valido o incompleto. Genera un nuovo link e riprova.");
+            return;
+          }
+
+          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          if (error) {
+            setMessage(String(error.message || "Accesso non riuscito."));
+            return;
+          }
+
+          const cleaned = `${window.location.pathname}${window.location.search}`;
+          window.history.replaceState({}, document.title, cleaned);
+        }
+
+        const { data, error } = await supabase.auth.getSession();
+        if (error || !data.session) {
+          setMessage(String(error?.message || "Sessione non trovata dopo il login."));
+          return;
+        }
+
+        router.replace(resolvePostLoginPath(nextPath, data.session.user as any) as Route);
+        router.refresh();
+      } catch (e: any) {
+        setMessage(String(e?.message ?? "Accesso non riuscito."));
+      }
+    })();
+  }, [nextPath, router, searchParams, supabase]);
 
   const toFriendlyMessage = (e: any, fallback: string) => {
     const msg = String(e?.message ?? "");
