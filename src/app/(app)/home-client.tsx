@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import type { Route } from "next";
 import { CreditCard, CalendarDays, PawPrint, LogIn } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -318,7 +319,7 @@ export default function HomeClient() {
 
                     <div className="grid grid-cols-3 gap-2">
                       <Link
-                        href={`/prenotazioni/${b.id}`}
+                        href={`/prenotazioni/${b.id}` as Route}
                         className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900/70 px-3 text-sm font-medium text-slate-50 ring-1 ring-inset ring-slate-800 transition-colors hover:bg-slate-900 active:bg-slate-950"
                       >
                         Dettagli
