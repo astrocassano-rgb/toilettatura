@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -13,6 +13,14 @@ import { safeGetSession } from "@/lib/supabase/safe-session";
 export const dynamic = "force-dynamic";
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-10 text-sm text-slate-300">Caricamento...</div>}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}
+
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = useMemo(() => tryCreateSupabaseBrowserClient(), []);
