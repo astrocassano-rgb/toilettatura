@@ -300,12 +300,10 @@ function LoginContent() {
   return (
     <div className="mx-auto max-w-md px-4 py-10">
       <div className="mb-6">
-        <Button variant="ghost" asChild className="-ml-4 text-slate-400 hover:text-slate-100">
-          <Link href="/">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Torna alla Home
-          </Link>
-        </Button>
+        <Link href="/" className="inline-flex items-center text-sm font-medium text-slate-400 hover:text-slate-100 transition-colors">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Torna alla Home
+        </Link>
       </div>
       <Card>
         <CardHeader className="space-y-1">
