@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +18,13 @@ type AuthMode = "signin" | "signup";
 function resolvePostLoginPath(nextPath: string, user: { app_metadata?: { role?: string } } | null | undefined) {
   if (nextPath !== "/") return nextPath;
   return user?.app_metadata?.role === "admin" ? "/admin" : "/";
+}
+
+function isProfileComplete(profile: { first_name: string | null; last_name: string | null; phone: string | null } | null | undefined) {
+  const firstName = String(profile?.first_name ?? "").trim();
+  const lastName = String(profile?.last_name ?? "").trim();
+  const phone = String(profile?.phone ?? "").trim();
+  return Boolean(firstName && lastName && phone);
 }
 
 function buildAuthCallbackUrl(nextPath: string) {
@@ -54,6 +61,29 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [canResend, setCanResend] = useState(false);
+
+  const maybeRequireProfileCompletion = useCallback(
+    async (user: any) => {
+      if (!supabase) return false;
+      if (user?.app_metadata?.role === "admin") return false;
+
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("first_name,last_name,phone")
+        .eq("id", String(user?.id ?? ""))
+        .maybeSingle();
+
+      if (error) return false;
+      if (isProfileComplete(profile as any)) return false;
+
+      const postLogin = resolvePostLoginPath(nextPath, user as any);
+      const target = `/profilo?complete=1&next=${encodeURIComponent(postLogin)}`;
+      router.replace(target as Route);
+      router.refresh();
+      return true;
+    },
+    [nextPath, router, supabase]
+  );
 
   useEffect(() => {
     if (!supabase) return;
@@ -113,13 +143,16 @@ function LoginContent() {
           return;
         }
 
+        const redirected = await maybeRequireProfileCompletion(data.session.user as any);
+        if (redirected) return;
+
         router.replace(resolvePostLoginPath(nextPath, data.session.user as any) as Route);
         router.refresh();
       } catch (e: any) {
         setMessage(String(e?.message ?? "Accesso non riuscito."));
       }
     })();
-  }, [nextPath, router, searchParams, supabase]);
+  }, [maybeRequireProfileCompletion, nextPath, router, searchParams, supabase]);
 
   const toFriendlyMessage = (e: any, fallback: string) => {
     const msg = String(e?.message ?? "");
@@ -155,6 +188,9 @@ function LoginContent() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      const redirected = await maybeRequireProfileCompletion(data.user as any);
+      if (redirected) return;
+
       router.replace(resolvePostLoginPath(nextPath, data.user as any) as Route);
     } catch (e: any) {
       setMessage(toFriendlyMessage(e, "Accesso non riuscito."));
@@ -175,6 +211,9 @@ function LoginContent() {
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo } });
       if (error) throw error;
       if (data.session) {
+        const redirected = await maybeRequireProfileCompletion(data.session.user as any);
+        if (redirected) return;
+
         router.replace(resolvePostLoginPath(nextPath, data.session.user as any) as Route);
       } else {
         setMessage("Account creato. Controlla la email e conferma la registrazione, poi torna qui e accedi.");
