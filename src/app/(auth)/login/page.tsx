@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { tryCreateSupabaseBrowserClient } from "@/lib/supabase/optional";
-import { Apple, LogIn, Mail, UserPlus } from "lucide-react";
+import { LogIn, Mail, UserPlus, ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -299,6 +299,14 @@ function LoginContent() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
+      <div className="mb-6">
+        <Button variant="ghost" asChild className="-ml-4 text-slate-400 hover:text-slate-100">
+          <Link href="/">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Torna alla Home
+          </Link>
+        </Button>
+      </div>
       <Card>
         <CardHeader className="space-y-1">
           <p className="text-xs font-medium text-slate-300">Accesso</p>
@@ -401,19 +409,7 @@ function LoginContent() {
               <span className="text-base font-semibold">G</span>
               Continua con Google
             </Button>
-            <Button className="w-full" variant="secondary" type="button" onClick={() => void signInWithOAuth("apple")} disabled={!isConfigured || loading}>
-              <Apple className="h-5 w-5" />
-              Continua con Apple
-            </Button>
           </div>
-
-          <p className="text-xs leading-relaxed text-slate-300">
-            Intanto puoi tornare al{" "}
-            <Link href="/" className="text-blue-200 underline underline-offset-4">
-              dashboard
-            </Link>
-            .
-          </p>
         </CardContent>
       </Card>
     </div>
