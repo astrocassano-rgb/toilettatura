@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, Clock, Lock, Plus, RefreshCw } from "lucide-react";
+import { WeekAvailabilityCalendar } from "@/components/availability/week-availability-calendar";
 import { useDogsStore } from "@/store/dogs-store";
+import { getPrimaryService, parseServiceBundle } from "@/lib/booking-planner";
 import { tryCreateSupabaseBrowserClient } from "@/lib/supabase/optional";
 import type { Database } from "@/types/database";
 
@@ -16,7 +18,7 @@ type StationType = Database["public"]["Enums"]["station_type"];
 
 const slotMinutes = 15;
 const dayHours = { start: 8, end: 20 };
-const calendarDays = 14;
+const calendarDays = 90;
 
 const serviceLabels: Record<StationType, string> = {
   WASH_BASIN: "Lavaggio",
@@ -59,20 +61,36 @@ function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
 
 export default function PrenotaColonneClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const initialServiceType = useMemo(() => {
+    return getPrimaryService(parseServiceBundle(searchParams?.get("services") ?? searchParams?.get("service")));
+  }, [searchParams]);
+  const initialDuration = useMemo(() => {
+    const value = Number(searchParams?.get("duration"));
+    return [15, 30, 45, 60].includes(value) ? value : 30;
+  }, [searchParams]);
+  const initialDay = useMemo(() => {
+    const value = searchParams?.get("day");
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return startOfLocalDay(new Date());
+    const parsed = new Date(`${value}T00:00:00`);
+    return Number.isNaN(parsed.getTime()) ? startOfLocalDay(new Date()) : startOfLocalDay(parsed);
+  }, [searchParams]);
 
   const calendarStart = useMemo(() => startOfLocalDay(new Date()), []);
   const calendar = useMemo(() => Array.from({ length: calendarDays }, (_, i) => addDays(calendarStart, i)), [calendarStart]);
 
-  const [day, setDay] = useState<Date>(() => startOfLocalDay(new Date()));
+  const [day, setDay] = useState<Date>(initialDay);
+  const [calendarSelection, setCalendarSelection] = useState<{ dayKey: string; label: string } | null>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [dogs, setDogs] = useState<Database["public"]["Tables"]["dogs"]["Row"][]>([]);
   const [availability, setAvailability] = useState<AvailabilityRow[]>([]);
   const [availabilityLoaded, setAvailabilityLoaded] = useState(false);
   const [availabilityHint, setAvailabilityHint] = useState<string | null>(null);
-  const [serviceType, setServiceType] = useState<StationType | "">("");
+  const [serviceType, setServiceType] = useState<StationType | "">(initialServiceType);
   const [selectedDogId, setSelectedDogId] = useState<string>("");
-  const [durationMinutes, setDurationMinutes] = useState<number>(30);
+  const [durationMinutes, setDurationMinutes] = useState<number>(initialDuration);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -95,6 +113,12 @@ export default function PrenotaColonneClient() {
     const first = stations[0]?.type;
     if (first) setServiceType(first);
   }, [stations, serviceType]);
+
+  useEffect(() => {
+    setDay(initialDay);
+    setDurationMinutes(initialDuration);
+    if (initialServiceType) setServiceType(initialServiceType);
+  }, [initialDay, initialDuration, initialServiceType]);
 
   const dayStart = useMemo(() => new Date(day.getFullYear(), day.getMonth(), day.getDate(), dayHours.start, 0, 0, 0), [
     day
@@ -346,6 +370,13 @@ export default function PrenotaColonneClient() {
     return d.toLocaleDateString("it-IT", { weekday: "long", day: "2-digit", month: "long" });
   }, [day]);
 
+  useEffect(() => {
+    setCalendarSelection((current) => {
+      if (!current) return null;
+      return current.dayKey === selectedDayKey ? current : null;
+    });
+  }, [selectedDayKey]);
+
   if (!isConfigured) {
     return (
       <div className="space-y-6">
@@ -473,6 +504,24 @@ export default function PrenotaColonneClient() {
                 <p className="text-xs font-medium text-slate-200">Disponibilità</p>
                 <span className="text-xs text-slate-300">Per {durationMinutes} min</span>
               </div>
+
+              <WeekAvailabilityCalendar
+                startDay={day}
+                stations={stationsForService.map((s) => ({ id: s.id, name: s.name }))}
+                availability={availability}
+                slotMinutes={slotMinutes}
+                durationMinutes={durationMinutes}
+                hours={dayHours}
+                selected={calendarSelection ?? { dayKey: selectedDayKey, label: "" }}
+                onSelect={(cell) => {
+                  if (!cell.availableCount) return;
+                  setCalendarSelection({ dayKey: cell.dayKey, label: cell.label });
+                  setDay(startOfLocalDay(cell.start));
+                }}
+                onPrevWeek={() => setDay(startOfLocalDay(addDays(day, -7)))}
+                onNextWeek={() => setDay(startOfLocalDay(addDays(day, 7)))}
+              />
+
               <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
                 {daySummaries.map((d) => {
                   const selected = d.key === selectedDayKey;
