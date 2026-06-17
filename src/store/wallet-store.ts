@@ -1,43 +1,38 @@
 "use client";
 
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { tryCreateSupabaseBrowserClient } from "@/lib/supabase/optional";
 
 export type WalletPackId = "starter" | "premium" | "max";
 
 export type WalletState = {
-  balanceCredits: number;
-  addCredits: (credits: number) => void;
-  spendCredits: (credits: number) => boolean;
+  balanceCredits: number | null;
+  loading: boolean;
+  refresh: () => Promise<void>;
 };
 
-export const useWalletStore = create<WalletState>()(
-  persist(
-    (set, get) => ({
-      balanceCredits: 0,
-      addCredits: (credits) =>
-        set((s) => ({ balanceCredits: Math.max(0, Math.round((s.balanceCredits + credits) * 100) / 100) })),
-      spendCredits: (credits) => {
-        const next = get().balanceCredits - credits;
-        if (next < 0) return false;
-        set({ balanceCredits: Math.round(next * 100) / 100 });
-        return true;
+export const useWalletStore = create<WalletState>((set) => ({
+  balanceCredits: null,
+  loading: false,
+  refresh: async () => {
+    const supabase = tryCreateSupabaseBrowserClient();
+    if (!supabase) return;
+
+    set({ loading: true });
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        set({ balanceCredits: 0 });
+        return;
       }
-    }),
-    {
-      name: "toilettatura_wallet",
-      storage: createJSONStorage(() => ({
-        getItem: (name) => (typeof window === "undefined" ? null : window.localStorage.getItem(name)),
-        setItem: (name, value) => {
-          if (typeof window !== "undefined") window.localStorage.setItem(name, value);
-        },
-        removeItem: (name) => {
-          if (typeof window !== "undefined") window.localStorage.removeItem(name);
-        }
-      }))
+
+      const { data } = await supabase.from("wallets").select("balance_credits").eq("customer_id", userData.user.id).maybeSingle();
+      set({ balanceCredits: data?.balance_credits ?? 0 });
+    } finally {
+      set({ loading: false });
     }
-  )
-);
+  }
+}));
 
 export function estimateMinutesFromCredits(credits: number) {
   return Math.max(0, Math.floor(credits));

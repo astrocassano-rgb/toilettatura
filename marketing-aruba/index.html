@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DogWash24 — Piattaforma Toilettatura H24</title>
+    <meta
+      name="description"
+      content="Piattaforma per toelettatura/lavaggio self-service H24: prenotazioni, wallet crediti, dashboard admin e check-in con QR e kiosk di struttura."
+    />
+    <meta property="og:title" content="DogWash24 — Piattaforma Toilettatura H24" />
+    <meta
+      property="og:description"
+      content="Prenotazioni, wallet crediti, dashboard admin e operatività H24 con check-in QR e sessioni live."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#020617" />
+    <style>
+      :root {
+        --bg: #020617;
+        --panel: rgba(2, 6, 23, 0.6);
+        --panel2: rgba(2, 6, 23, 0.4);
+        --ring: rgba(148, 163, 184, 0.18);
+        --text: #e2e8f0;
+        --muted: rgba(226, 232, 240, 0.78);
+        --muted2: rgba(226, 232, 240, 0.6);
+        --blue: #3b82f6;
+        --blue2: rgba(59, 130, 246, 0.18);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+          "Segoe UI Emoji";
+        background: radial-gradient(1200px 900px at 20% 0%, rgba(59, 130, 246, 0.18), transparent 60%),
+          radial-gradient(900px 700px at 100% 30%, rgba(34, 197, 94, 0.12), transparent 55%),
+          radial-gradient(900px 700px at 0% 100%, rgba(245, 158, 11, 0.12), transparent 55%),
+          var(--bg);
+        color: var(--text);
+      }
+      a {
+        color: inherit;
+      }
+      .container {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 28px 16px 56px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 16px;
+        border: 1px solid var(--ring);
+        border-radius: 24px;
+        background: var(--panel);
+        backdrop-filter: blur(8px);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand img {
+        width: 96px;
+        height: 96px;
+        border-radius: 18px;
+        border: 1px solid var(--ring);
+        background: rgba(15, 23, 42, 0.7);
+      }
+      .brand small {
+        display: block;
+        font-size: 16px;
+        letter-spacing: 0.06em;
+        color: var(--muted2);
+      }
+      .brand strong {
+        display: block;
+        font-size: 32x;
+        letter-spacing: -0.01em;
+      }
+      .cta-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 32px;
+        padding: 0 14px;
+        border-radius: 14px;
+        border: 1px solid var(--ring);
+        background: rgba(15, 23, 42, 0.65);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .btn.primary {
+        background: var(--blue);
+        border-color: rgba(59, 130, 246, 0.45);
+      }
+      .hero {
+        padding: 26px 6px 10px;
+      }
+      .hero h1 {
+        margin: 14px 0 10px;
+        font-size: clamp(28px, 4vw, 42px);
+        letter-spacing: -0.03em;
+        line-height: 1.08;
+      }
+      .hero p {
+        margin: 0;
+        max-width: 760px;
+        color: var(--muted);
+        line-height: 1.6;
+        font-size: 15px;
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+      }
+      .grid.cols-3 {
+        grid-template-columns: 1fr;
+      }
+      .grid.cols-2 {
+        grid-template-columns: 1fr;
+      }
+      @media (min-width: 900px) {
+        .grid.cols-3 {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .grid.cols-2 {
+          grid-template-columns: 1.35fr 0.65fr;
+        }
+      }
+      .card {
+        border: 1px solid var(--ring);
+        border-radius: 24px;
+        background: var(--panel);
+        backdrop-filter: blur(8px);
+        overflow: hidden;
+      }
+      .card .hd {
+        padding: 16px 16px 0;
+      }
+      .kicker {
+        font-size: 12px;
+        color: var(--muted2);
+        letter-spacing: 0.02em;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .card h2 {
+        margin: 6px 0 0;
+        font-size: 18px;
+        letter-spacing: -0.01em;
+      }
+      .card .bd {
+        padding: 14px 16px 16px;
+        color: var(--muted);
+        line-height: 1.55;
+        font-size: 14px;
+      }
+      .pill {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        border-radius: 999px;
+        padding: 8px 12px;
+        border: 1px solid var(--ring);
+        background: rgba(2, 6, 23, 0.45);
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .features {
+        margin-top: 12px;
+      }
+      .feature-title {
+        margin: 0 0 6px;
+        font-size: 15px;
+        color: var(--text);
+        font-weight: 700;
+      }
+      .price {
+        font-size: 26px;
+        color: var(--text);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 10px 0 8px;
+      }
+      .note {
+        font-size: 12px;
+        color: var(--muted2);
+        line-height: 1.5;
+      }
+      .footer {
+        margin-top: 18px;
+        padding: 16px;
+        border: 1px solid var(--ring);
+        border-radius: 24px;
+        background: var(--panel2);
+        color: var(--muted2);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+      .highlight {
+        background: var(--blue2);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+      }
+      .list {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .list li {
+        margin: 6px 0;
+      }
+      .infographic {
+        margin-top: 14px;
+      }
+      .infographic-frame {
+        padding: 16px;
+      }
+      .infographic-frame img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 18px;
+        border: 1px solid var(--ring);
+        background: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="topbar">
+        <div class="brand">
+          <img src="./logo.png" alt="DogWash24" />
+          <div>
+            <small>Toelettatura · Self-Service · H24</small>
+            <strong>DogWash24</strong>
+          </div>
+        </div>
+        <div class="cta-row">
+          <a class="btn" href="mailto:info@dogwash24.it?subject=Richiesta%20demo%20DogWash24">Richiedi una demo</a>
+          <a class="btn primary" href="https://app.dogwash24.it">Apri la webapp</a>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div class="pill">Piattaforma completa per gestire una toelettatura/lavaggio cani H24</div>
+        <h1>Prenotazioni, crediti e operatività in struttura con QR e sessioni</h1>
+        <p>
+          DogWash24 è una piattaforma pensata per impianti self-service H24: il cliente prenota, paga con crediti, arriva in struttura
+          e si identifica con QR. Il gestore controlla postazioni e sessioni live, riduce disguidi e automatizza il flusso.
+        </p>
+      </section>
+
+      <section class="grid cols-2">
+        <article class="card">
+          <div class="hd">
+            <div class="kicker">Perché</div>
+            <h2>Riduci caos operativo, aumenta controllo</h2>
+          </div>
+          <div class="bd">
+            <ul class="list">
+              <li>Disponibilità reale e anti-overbooking.</li>
+              <li>Wallet a crediti con movimenti tracciati.</li>
+              <li>Check-in in struttura e sessioni con timer.</li>
+              <li>Dashboard admin per prenotazioni, clienti, pagamenti e postazioni.</li>
+            </ul>
+          </div>
+        </article>
+
+        <aside class="card highlight">
+          <div class="hd">
+            <div class="kicker">H24 ready</div>
+            <h2>QR + Kiosk postazione</h2>
+          </div>
+          <div class="bd">
+            <p>
+              Il QR contiene un token firmato. La postazione valida e recupera la finestra oraria e il tempo residuo per sapere quando
+              avviarsi e quando terminare.
+            </p>
+            <p class="note">
+              La parte hardware (relè/contattori/cablaggi) è un passo successivo: QR → validazione → sessione → start/stop.
+            </p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="features">
+        <div class="grid cols-3">
+          <article class="card">
+            <div class="hd">
+              <div class="kicker">Cliente</div>
+              <h2>Prenotazione guidata</h2>
+            </div>
+            <div class="bd">
+              Prenotazione mobile-first, durata suggerita in base al cane e ai servizi, scelta giorno/orario e riepilogo chiaro.
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="hd">
+              <div class="kicker">Economico</div>
+              <h2>Crediti e report</h2>
+            </div>
+            <div class="bd">
+              Wallet crediti con movimenti e dashboard admin con filtri ed export: controllo e tracciabilità.
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="hd">
+              <div class="kicker">Admin</div>
+              <h2>Postazioni e sessioni</h2>
+            </div>
+            <div class="bd">
+              Gestione postazioni, mappa struttura e sessioni live con timer per operatività H24.
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="features">
+        <div class="grid cols-3">
+          <article class="card">
+            <div class="hd">
+              <div class="kicker">Utilizzo</div>
+              <h2>Licenza d’uso</h2>
+            </div>
+            <div class="bd">
+              <div class="price">da 150 €/mese</div>
+              Uso piattaforma + aggiornamenti finché attivo il canone.
+              <div class="note">Setup iniziale una tantum e assistenza base in base al piano.</div>
+            </div>
+          </article>
+
+          <article class="card highlight">
+            <div class="hd">
+              <div class="kicker">Consigliato</div>
+              <h2>Noleggio + update</h2>
+            </div>
+            <div class="bd">
+              <div class="price">da 300 €/mese</div>
+              Gestione aggiornamenti, supporto e governance release.
+              <div class="note">Ideale se vuoi “zero pensieri” e un servizio continuativo.</div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="hd">
+              <div class="kicker">Acquisto</div>
+              <h2>Piattaforma completa</h2>
+            </div>
+            <div class="bd">
+              <div class="price">35k–120k €</div>
+              Acquisto IP/sorgenti + handover tecnico (variabile per esclusiva).
+              <div class="note">Opzione adatta a chi vuole possedere e sviluppare internamente.</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="infographic">
+        <article class="card">
+          <div class="hd">
+            <div class="kicker">Infografica</div>
+            <h2>Panoramica visuale della piattaforma</h2>
+          </div>
+          <div class="bd">
+            Un supporto molto utile per fiere, appuntamenti commerciali e presentazioni rapide: in una sola schermata spiega operatività,
+            modello H24 e opzioni economiche.
+          </div>
+          <div class="infographic-frame">
+            <img src="./infografica-dogwash24.png" alt="Infografica DogWash24 con funzionalità H24, wallet, anti-overbooking e modelli di investimento" />
+          </div>
+        </article>
+      </section>
+
+      <section class="footer">
+        <div><strong>Contatti:</strong> <a href="mailto:info@dogwash24.it">info@dogwash24.it</a></div>
+        <div class="note">
+          Nota: questa pagina è pensata per hosting statico (es. Aruba Hosting Basic). La webapp completa va pubblicata su hosting con
+          Node.js o su un provider dedicato e collegata via sottodominio (es. app.dogwash24.it).
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

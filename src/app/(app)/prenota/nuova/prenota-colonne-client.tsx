@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { CalendarDays, Clock, Lock, Plus, RefreshCw } from "lucide-react";
-import { WeekAvailabilityCalendar } from "@/components/availability/week-availability-calendar";
-import { useDogsStore } from "@/store/dogs-store";
 import { getPrimaryService, parseServiceBundle } from "@/lib/booking-planner";
 import { tryCreateSupabaseBrowserClient } from "@/lib/supabase/optional";
 import type { Database } from "@/types/database";
@@ -59,6 +58,19 @@ function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
   return aStart < bEnd && bStart < aEnd;
 }
 
+function isValidLocalDateParts(day: number, month: number, year: number) {
+  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) return false;
+  if (year < 1900 || year > 2100) return false;
+  if (month < 1 || month > 12) return false;
+  if (day < 1 || day > 31) return false;
+  const d = new Date(year, month - 1, day, 0, 0, 0, 0);
+  return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
+}
+
+function pad2(value: string) {
+  return value.padStart(2, "0");
+}
+
 export default function PrenotaColonneClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -81,7 +93,6 @@ export default function PrenotaColonneClient() {
   const calendar = useMemo(() => Array.from({ length: calendarDays }, (_, i) => addDays(calendarStart, i)), [calendarStart]);
 
   const [day, setDay] = useState<Date>(initialDay);
-  const [calendarSelection, setCalendarSelection] = useState<{ dayKey: string; label: string } | null>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [dogs, setDogs] = useState<Database["public"]["Tables"]["dogs"]["Row"][]>([]);
@@ -93,6 +104,10 @@ export default function PrenotaColonneClient() {
   const [durationMinutes, setDurationMinutes] = useState<number>(initialDuration);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [dayPart, setDayPart] = useState("");
+  const [monthPart, setMonthPart] = useState("");
+  const [yearPart, setYearPart] = useState("");
+  const [showCalendarCard, setShowCalendarCard] = useState(false);
 
   const supabase = useMemo(() => tryCreateSupabaseBrowserClient(), []);
 
@@ -119,6 +134,18 @@ export default function PrenotaColonneClient() {
     setDurationMinutes(initialDuration);
     if (initialServiceType) setServiceType(initialServiceType);
   }, [initialDay, initialDuration, initialServiceType]);
+
+  const calendarStartKey = useMemo(() => ymd(calendarStart), [calendarStart]);
+  const calendarEndKey = useMemo(() => {
+    const last = calendar[calendar.length - 1] ?? calendarStart;
+    return ymd(last);
+  }, [calendar, calendarStart]);
+
+  useEffect(() => {
+    setDayPart(String(day.getDate()).padStart(2, "0"));
+    setMonthPart(String(day.getMonth() + 1).padStart(2, "0"));
+    setYearPart(String(day.getFullYear()));
+  }, [day]);
 
   const dayStart = useMemo(() => new Date(day.getFullYear(), day.getMonth(), day.getDate(), dayHours.start, 0, 0, 0), [
     day
@@ -310,72 +337,12 @@ export default function PrenotaColonneClient() {
     return stations.filter((s) => s.type === serviceType);
   }, [serviceType, stations]);
 
-  const daySummaries = useMemo(() => {
-    const availableStations = stationsForService.filter((s) => s.status === "AVAILABLE");
-    const startSlotsCount = Math.max(
-      0,
-      Math.floor(((dayHours.end - dayHours.start) * 60 - durationMinutes) / slotMinutes) + 1
-    );
-
-    return calendar.map((d) => {
-      const key = ymd(d);
-      const labelWeekday = d.toLocaleDateString("it-IT", { weekday: "short" });
-      const labelMonth = d.toLocaleDateString("it-IT", { month: "short" });
-      const labelDay = String(d.getDate()).padStart(2, "0");
-
-      if (!availabilityLoaded || !availableStations.length || startSlotsCount === 0) {
-        return {
-          key,
-          date: d,
-          weekday: labelWeekday,
-          day: labelDay,
-          month: labelMonth,
-          status: availabilityLoaded ? "NON_DISPONIBILE" : "SCONOSCIUTO"
-        } as const;
-      }
-
-      const businessStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), dayHours.start, 0, 0, 0);
-      const totalCount = availableStations.length * startSlotsCount;
-      let freeCount = 0;
-
-      for (const station of availableStations) {
-        const intervals = availabilityByStation.get(station.id) ?? [];
-        for (let i = 0; i < startSlotsCount; i++) {
-          const start = addMinutes(businessStart, i * slotMinutes);
-          const end = addMinutes(start, durationMinutes);
-          const occupied = intervals.some((it) => overlaps(start, end, it.start, it.end));
-          if (!occupied) freeCount += 1;
-        }
-      }
-
-      const ratio = totalCount ? freeCount / totalCount : 0;
-      const status =
-        freeCount === 0 ? "PIENO" : ratio >= 0.55 ? "LIBERO" : ratio >= 0.2 ? "DISPONIBILE" : "QUASI_PIENO";
-
-      return {
-        key,
-        date: d,
-        weekday: labelWeekday,
-        day: labelDay,
-        month: labelMonth,
-        status
-      } as const;
-    });
-  }, [availabilityByStation, availabilityLoaded, calendar, durationMinutes, stationsForService]);
-
   const selectedDayKey = useMemo(() => ymd(day), [day]);
 
   const dayLabel = useMemo(() => {
     const d = new Date(day);
     return d.toLocaleDateString("it-IT", { weekday: "long", day: "2-digit", month: "long" });
   }, [day]);
-
-  useEffect(() => {
-    setCalendarSelection((current) => {
-      if (!current) return null;
-      return current.dayKey === selectedDayKey ? current : null;
-    });
-  }, [selectedDayKey]);
 
   if (!isConfigured) {
     return (
@@ -505,72 +472,90 @@ export default function PrenotaColonneClient() {
                 <span className="text-xs text-slate-300">Per {durationMinutes} min</span>
               </div>
 
-              <WeekAvailabilityCalendar
-                startDay={day}
-                stations={stationsForService.map((s) => ({ id: s.id, name: s.name }))}
-                availability={availability}
-                slotMinutes={slotMinutes}
-                durationMinutes={durationMinutes}
-                hours={dayHours}
-                selected={calendarSelection ?? { dayKey: selectedDayKey, label: "" }}
-                onSelect={(cell) => {
-                  if (!cell.availableCount) return;
-                  setCalendarSelection({ dayKey: cell.dayKey, label: cell.label });
-                  setDay(startOfLocalDay(cell.start));
-                }}
-                onPrevWeek={() => setDay(startOfLocalDay(addDays(day, -7)))}
-                onNextWeek={() => setDay(startOfLocalDay(addDays(day, 7)))}
-              />
+              <div className="rounded-3xl bg-slate-950/40 p-4 ring-1 ring-inset ring-slate-800">
+                <p className="text-sm font-semibold text-slate-50">Data</p>
+                <p className="mt-1 text-xs text-slate-300">GG / MM / AAAA oppure calendario.</p>
 
-              <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
-                {daySummaries.map((d) => {
-                  const selected = d.key === selectedDayKey;
-                  const dot =
-                    d.status === "LIBERO"
-                      ? "bg-emerald-400"
-                      : d.status === "DISPONIBILE"
-                        ? "bg-amber-400"
-                        : d.status === "QUASI_PIENO" || d.status === "PIENO"
-                          ? "bg-rose-400"
-                          : "bg-slate-500";
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <Input
+                    inputMode="numeric"
+                    placeholder="GG"
+                    maxLength={2}
+                    value={dayPart}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "").slice(0, 2);
+                      setDayPart(value);
+                      const d = Number(value);
+                      const m = Number(monthPart);
+                      const y = Number(yearPart);
+                      if (!isValidLocalDateParts(d, m, y)) return;
+                      const key = `${y}-${pad2(String(m))}-${pad2(String(d))}`;
+                      if (key < calendarStartKey || key > calendarEndKey) return;
+                      setDay(startOfLocalDay(new Date(`${key}T00:00:00`)));
+                    }}
+                  />
+                  <Input
+                    inputMode="numeric"
+                    placeholder="MM"
+                    maxLength={2}
+                    value={monthPart}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "").slice(0, 2);
+                      setMonthPart(value);
+                      const d = Number(dayPart);
+                      const m = Number(value);
+                      const y = Number(yearPart);
+                      if (!isValidLocalDateParts(d, m, y)) return;
+                      const key = `${y}-${pad2(String(m))}-${pad2(String(d))}`;
+                      if (key < calendarStartKey || key > calendarEndKey) return;
+                      setDay(startOfLocalDay(new Date(`${key}T00:00:00`)));
+                    }}
+                  />
+                  <Input
+                    inputMode="numeric"
+                    placeholder="AAAA"
+                    maxLength={4}
+                    value={yearPart}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "").slice(0, 4);
+                      setYearPart(value);
+                      const d = Number(dayPart);
+                      const m = Number(monthPart);
+                      const y = Number(value);
+                      if (!isValidLocalDateParts(d, m, y)) return;
+                      const key = `${y}-${pad2(String(m))}-${pad2(String(d))}`;
+                      if (key < calendarStartKey || key > calendarEndKey) return;
+                      setDay(startOfLocalDay(new Date(`${key}T00:00:00`)));
+                    }}
+                  />
+                </div>
 
-                  const base =
-                    "shrink-0 rounded-2xl px-3 py-2 text-left ring-1 ring-inset transition-colors " +
-                    (selected ? "bg-blue-500/15 ring-blue-500/30" : "bg-slate-950/40 ring-slate-800 hover:bg-slate-950/50");
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <Button type="button" variant="secondary" onClick={() => setShowCalendarCard((v) => !v)}>
+                    {showCalendarCard ? "Chiudi calendario" : "Apri calendario"}
+                  </Button>
+                  <div className="text-xs text-slate-300">{dayLabel}</div>
+                </div>
 
-                  return (
-                    <button
-                      key={d.key}
-                      type="button"
-                      disabled={loading}
-                      onClick={() => setDay(startOfLocalDay(d.date))}
-                      className={base}
-                      aria-pressed={selected}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[11px] font-medium text-slate-300">{d.weekday}</span>
-                        <span className={`h-2 w-2 rounded-full ${dot}`} />
-                      </div>
-                      <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-base font-semibold text-slate-50">{d.day}</span>
-                        <span className="text-[11px] text-slate-300">{d.month}</span>
-                      </div>
-                      <div className="mt-1 text-[11px] text-slate-300">
-                        {d.status === "SCONOSCIUTO"
-                          ? "—"
-                          : d.status === "NON_DISPONIBILE"
-                            ? "N/D"
-                            : d.status === "LIBERO"
-                              ? "Libero"
-                              : d.status === "DISPONIBILE"
-                                ? "Disponibile"
-                                : d.status === "QUASI_PIENO"
-                                  ? "Quasi pieno"
-                                  : "Pieno"}
-                      </div>
-                    </button>
-                  );
-                })}
+                {showCalendarCard ? (
+                  <div className="mt-3 rounded-2xl bg-slate-900/40 p-3 ring-1 ring-inset ring-slate-800">
+                    <p className="text-xs font-medium text-slate-200">Calendario</p>
+                    <div className="mt-2">
+                      <Input
+                        type="date"
+                        min={calendarStartKey}
+                        max={calendarEndKey}
+                        value={selectedDayKey}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (!value) return;
+                          setDay(startOfLocalDay(new Date(`${value}T00:00:00`)));
+                          setShowCalendarCard(false);
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </div>
               {availabilityHint ? (
                 <div className="rounded-2xl bg-slate-950/40 p-3 text-xs text-slate-200 ring-1 ring-inset ring-slate-800">

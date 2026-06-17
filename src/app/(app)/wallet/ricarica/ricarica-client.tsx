@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CreditCard, ShieldCheck } from "lucide-react";
-import { useWalletStore, type WalletPackId } from "@/store/wallet-store";
+import type { WalletPackId } from "@/store/wallet-store";
 
 const packMap: Record<WalletPackId, { title: string; subtitle: string; credits: number }> = {
   starter: { title: "Starter", subtitle: "10€ = 10 crediti", credits: 10 },
@@ -15,8 +15,9 @@ const packMap: Record<WalletPackId, { title: string; subtitle: string; credits: 
 
 export function RicaricaClient({ pack }: { pack: WalletPackId }) {
   const router = useRouter();
-  const addCredits = useWalletStore((s) => s.addCredits);
   const resolved = useMemo(() => packMap[pack] ?? packMap.starter, [pack]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
@@ -59,18 +60,41 @@ export function RicaricaClient({ pack }: { pack: WalletPackId }) {
             <Button
               className="flex-1"
               variant="primary"
-              onClick={() => {
-                addCredits(resolved.credits);
-                router.push("/wallet");
-              }}
+              disabled={loading}
+              onClick={() => void (async () => {
+                setLoading(true);
+                setMessage(null);
+                try {
+                  const res = await fetch("/api/wallet/topup", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ pack })
+                  });
+                  const body = await res.json().catch(() => null);
+                  if (!res.ok) {
+                    const err = body && typeof body === "object" && "error" in body ? String((body as any).error) : "Ricarica non riuscita.";
+                    setMessage(err);
+                    return;
+                  }
+                  router.push("/wallet");
+                } catch (e: any) {
+                  setMessage(String(e?.message ?? "Ricarica non riuscita."));
+                } finally {
+                  setLoading(false);
+                }
+              })()}
             >
               <CreditCard className="h-5 w-5" />
-              Conferma
+              {loading ? "Conferma..." : "Conferma"}
             </Button>
           </div>
+          {message ? (
+            <div className="rounded-2xl bg-slate-950/40 p-3 text-sm text-slate-200 ring-1 ring-inset ring-slate-800">
+              {message}
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>
   );
 }
-

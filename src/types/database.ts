@@ -78,6 +78,11 @@ export type Database = {
           type: Database["public"]["Enums"]["station_type"];
           status: Database["public"]["Enums"]["station_status"];
           cost_per_minute: number;
+          layout_x: number;
+          layout_y: number;
+          layout_w: number;
+          layout_h: number;
+          layout_zone: string;
           created_at: string;
         };
         Insert: {
@@ -86,6 +91,11 @@ export type Database = {
           type: Database["public"]["Enums"]["station_type"];
           status?: Database["public"]["Enums"]["station_status"];
           cost_per_minute: number;
+          layout_x?: number;
+          layout_y?: number;
+          layout_w?: number;
+          layout_h?: number;
+          layout_zone?: string;
           created_at?: string;
         };
         Update: {
@@ -93,6 +103,11 @@ export type Database = {
           type?: Database["public"]["Enums"]["station_type"];
           status?: Database["public"]["Enums"]["station_status"];
           cost_per_minute?: number;
+          layout_x?: number;
+          layout_y?: number;
+          layout_w?: number;
+          layout_h?: number;
+          layout_zone?: string;
         };
         Relationships: [];
       };
@@ -154,6 +169,7 @@ export type Database = {
           amount_credits: number;
           amount_currency: number;
           stripe_intent_id: string | null;
+          note: string | null;
           created_at: string;
         };
         Insert: {
@@ -163,6 +179,7 @@ export type Database = {
           amount_credits: number;
           amount_currency: number;
           stripe_intent_id?: string | null;
+          note?: string | null;
           created_at?: string;
         };
         Update: {
@@ -170,6 +187,7 @@ export type Database = {
           amount_credits?: number;
           amount_currency?: number;
           stripe_intent_id?: string | null;
+          note?: string | null;
         };
         Relationships: [];
       };
@@ -201,7 +219,41 @@ export type Database = {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      admin_customers_overview: {
+        Row: {
+          customer_id: string;
+          email: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          phone: string | null;
+          balance_credits: number | null;
+          bookings_total: number;
+          bookings_upcoming: number;
+        };
+        Insert: {
+          customer_id?: string;
+          email?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          phone?: string | null;
+          balance_credits?: number | null;
+          bookings_total?: number;
+          bookings_upcoming?: number;
+        };
+        Update: {
+          customer_id?: string;
+          email?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          phone?: string | null;
+          balance_credits?: number | null;
+          bookings_total?: number;
+          bookings_upcoming?: number;
+        };
+        Relationships: [];
+      };
+    };
     Functions: {
       create_booking: {
         Args: {
@@ -235,6 +287,39 @@ export type Database = {
           station_id: string;
           start_time: string;
           end_time: string;
+        }[];
+      };
+      admin_adjust_wallet: {
+        Args: {
+          p_customer_id: string;
+          p_amount_credits: number;
+          p_reason?: string | null;
+        };
+        Returns: {
+          balance_credits: number;
+        }[];
+      };
+      apply_wallet_topup: {
+        Args: {
+          p_amount_credits: number;
+          p_amount_currency?: number;
+          p_reference?: string | null;
+        };
+        Returns: {
+          applied: boolean;
+          balance_credits: number;
+        }[];
+      };
+      admin_update_booking_status: {
+        Args: {
+          p_booking_id: string;
+          p_status: Database["public"]["Enums"]["booking_status"];
+          p_reason?: string | null;
+        };
+        Returns: {
+          status: Database["public"]["Enums"]["booking_status"];
+          refunded: boolean;
+          refund_credits: number;
         }[];
       };
     };
