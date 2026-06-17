@@ -27,7 +27,7 @@ type SuggestedSlot = {
 };
 
 const slotMinutes = 15;
-const dayHours = { start: 8, end: 20 };
+const dayHours = { start: 0, end: 24 };
 const calendarDays = 90;
 const WEEKDAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 const successRedirectDelayMs = 2500;

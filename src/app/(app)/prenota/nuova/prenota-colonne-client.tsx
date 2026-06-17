@@ -16,7 +16,7 @@ type AvailabilityRow = Database["public"]["Functions"]["get_booking_availability
 type StationType = Database["public"]["Enums"]["station_type"];
 
 const slotMinutes = 15;
-const dayHours = { start: 8, end: 20 };
+const dayHours = { start: 0, end: 24 };
 const calendarDays = 90;
 
 const serviceLabels: Record<StationType, string> = {
