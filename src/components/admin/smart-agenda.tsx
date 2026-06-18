@@ -283,13 +283,13 @@ export function SmartAgenda({
 
   // Current time line calculation
   const showCurrentTimeLine = isSameDay(selectedDate, currentTime);
-  const currentTimePosition = useMemo(() => {
+  const currentTimePercent = useMemo(() => {
     if (!showCurrentTimeLine) return 0;
     const currentMins = currentTime.getHours() * 60 + currentTime.getMinutes();
     const startMins = startHour * 60;
     const diff = currentMins - startMins;
-    return diff * MINUTE_SCALE;
-  }, [currentTime, showCurrentTimeLine, startHour]);
+    return (diff / totalMinutes) * 100;
+  }, [currentTime, showCurrentTimeLine, startHour, totalMinutes]);
 
   // Date selection helper bounds
   const months = [
@@ -439,63 +439,70 @@ export function SmartAgenda({
 
       {/* 3. GRID CONTENT CONTAINER */}
       <div className="flex-1 overflow-auto relative custom-scrollbar bg-slate-950">
-        
-        {/* ────────────────── VIEW MODE: GIORNO / SETTIMANA ────────────────── */}
+                {/* ────────────────── VIEW MODE: GIORNO / SETTIMANA ────────────────── */}
         {viewMode !== "mese" && (
-          <div className="min-w-[800px] flex relative select-none">
+          <div className="min-w-[800px] flex relative select-none h-full w-full">
             {/* Time Axis Column */}
-            <div className="w-16 flex-shrink-0 border-r border-slate-800 bg-slate-950 sticky left-0 z-20 shadow-2xl">
-              <div className="h-12 border-b border-slate-800/80 bg-slate-950 sticky top-0 z-30" />
-              {Array.from({ length: endHour - startHour }).map((_, i) => (
-                <div key={i} className="h-[60px] border-b border-slate-800/30 relative">
-                  <span className="absolute -top-2.5 left-2 text-[10px] font-black tracking-tight text-slate-500 bg-slate-950 px-1 py-0.5 rounded border border-slate-800/60 shadow-md">
-                    {String(startHour + i).padStart(2, '0')}:00
-                  </span>
-                </div>
-              ))}
+            <div className="w-16 flex-shrink-0 border-r border-slate-800 bg-slate-950 sticky left-0 z-20 shadow-2xl flex flex-col h-full">
+              <div className="h-12 border-b border-slate-800/80 bg-slate-950 sticky top-0 z-30 shrink-0" />
+              <div className="flex-1 flex flex-col relative pb-2">
+                {Array.from({ length: endHour - startHour }).map((_, i) => (
+                  <div key={i} className="flex-1 border-b border-slate-800/30 relative flex items-start">
+                    <span className="absolute -top-2.5 left-2 text-[10px] font-black tracking-tight text-slate-500 bg-slate-950 px-1 py-0.5 rounded border border-slate-800/60 shadow-md">
+                      {String(startHour + i).padStart(2, '0')}:00
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Column Render: GIORNO (Postazioni) */}
             {viewMode === "giorno" && stations.map(station => (
-              <div key={station.id} className="flex-1 border-r border-slate-800/60 relative min-w-[200px] group/col">
-                <div className="h-12 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md sticky top-0 z-10 flex flex-col justify-center items-center px-2 text-center shadow-sm">
+              <div key={station.id} className="flex-1 border-r border-slate-800/60 relative min-w-[200px] group/col flex flex-col h-full">
+                <div className="h-12 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md sticky top-0 z-10 flex flex-col justify-center items-center px-2 text-center shadow-sm shrink-0">
                   <p className="text-xs font-black text-slate-200 truncate w-full tracking-tight">{station.name}</p>
                   <p className="text-[8px] text-cyan-400/80 font-extrabold uppercase tracking-widest mt-0.5">{station.type.replace('_', ' ')}</p>
                 </div>
 
-                <div className="relative bg-slate-950" style={{ height: `${(endHour - startHour) * HOUR_HEIGHT}px` }}>
-                  {Array.from({ length: (endHour - startHour) * 2 }).map((_, i) => {
-                    const isHourLine = i % 2 === 0;
-                    const time = addMinutes(new Date(selectedDate).setHours(startHour, 0, 0, 0), i * 30);
-                    return (
-                      <div 
-                        key={i} 
-                        className={cn(
-                          "transition-colors cursor-pointer relative group/cell flex items-center justify-center",
-                          isHourLine ? "border-b border-slate-800/40" : "border-b border-dashed border-slate-800/25",
-                          "hover:bg-slate-900/30"
-                        )}
-                        style={{ height: '30px' }}
-                        onClick={() => setSelectedSlot({ stationId: station.id, time })}
-                      >
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity bg-cyan-500/[0.03]">
-                          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 text-cyan-400 text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg">
-                            <Plus className="w-3 h-3" />
-                            <span>{format(time, 'HH:mm')}</span>
+                <div className="relative bg-slate-950 flex-1 min-h-[300px]">
+                  {/* Slots background grid */}
+                  <div className="absolute inset-0 flex flex-col">
+                    {Array.from({ length: (endHour - startHour) * 2 }).map((_, i) => {
+                      const isHourLine = i % 2 === 0;
+                      const time = addMinutes(new Date(selectedDate).setHours(startHour, 0, 0, 0), i * 30);
+                      return (
+                        <div 
+                          key={i} 
+                          className={cn(
+                            "transition-colors cursor-pointer relative group/cell flex-1 flex items-center justify-center min-h-[15px]",
+                            isHourLine ? "border-b border-slate-800/40" : "border-b border-dashed border-slate-800/25",
+                            "hover:bg-slate-900/30"
+                          )}
+                          onClick={() => setSelectedSlot({ stationId: station.id, time })}
+                        >
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity bg-cyan-500/[0.03]">
+                            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 text-cyan-400 text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg">
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>{format(time, 'HH:mm')}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
 
+                  {/* Absolute booking cards */}
                   {dailyBookings.filter(b => b.station_id === station.id).map(booking => {
                     const start = parseISO(booking.start_time);
                     const end = parseISO(booking.end_time);
-                    const startTotalMinutes = (start.getHours() * 60 + start.getMinutes()) - (startHour * 60);
-                    const durationMins = differenceInMinutes(end, start);
                     
-                    const top = startTotalMinutes * MINUTE_SCALE;
-                    const height = durationMins * MINUTE_SCALE;
+                    // Clamp to active hours range
+                    const startMins = Math.max(0, (start.getHours() * 60 + start.getMinutes()) - (startHour * 60));
+                    const endMins = Math.min(totalMinutes, (end.getHours() * 60 + end.getMinutes()) - (startHour * 60));
+                    const durationMins = Math.max(15, endMins - startMins);
+                    
+                    const topPercent = (startMins / totalMinutes) * 100;
+                    const heightPercent = (durationMins / totalMinutes) * 100;
 
                     let accentColor = "from-cyan-500 to-blue-600";
                     let bgColors = "bg-cyan-500/[0.08] hover:bg-cyan-500/[0.12] border-cyan-500/30 shadow-cyan-500/[0.02]";
@@ -524,65 +531,38 @@ export function SmartAgenda({
                           "absolute left-2.5 right-2.5 rounded-xl border flex flex-row overflow-hidden p-0 transition-all duration-300 hover:ring-2 hover:ring-white/10 hover:shadow-2xl hover:z-10 cursor-pointer active:scale-[0.98]",
                           bgColors
                         )}
-                        style={{ top: `${top + 1.5}px`, height: `${height - 3}px` }}
+                        style={{ top: `calc(${topPercent}% + 2px)`, height: `calc(${heightPercent}% - 4px)` }}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedSlot({ stationId: booking.station_id, time: start });
                           setSelectedCustomerId(booking.customer_id);
-                          setModalDuration(durationMins);
+                          setModalDuration(differenceInMinutes(end, start));
                         }}
                       >
                         <div className={cn("w-1 shrink-0 bg-gradient-to-b", accentColor)} />
-                        <div className="flex-1 flex flex-col p-1.5 min-w-0 justify-between">
-                          {height < 38 ? (
-                            <div className="flex items-center justify-between gap-1.5 w-full h-full">
-                              <div className="flex items-center gap-1 min-w-0">
-                                <Icon className={cn("w-3 h-3 shrink-0", textPrimary)} />
-                                <span className="text-[10px] font-black text-slate-100 truncate">
-                                  {dogNames[booking.dog_id] || "Sconosciuto"}
-                                </span>
-                              </div>
-                              <span className="text-[8.5px] font-bold text-slate-400 shrink-0">
-                                {format(start, 'HH:mm')}
-                              </span>
+                        <div className="flex-1 flex flex-col p-1.5 min-w-0 justify-between h-full overflow-hidden">
+                          {/* Header row */}
+                          <div className="flex items-center justify-between gap-1 w-full min-w-0 shrink-0">
+                            <div className="flex items-center gap-1 min-w-0">
+                              <Icon className={cn("w-3 h-3 shrink-0", textPrimary)} />
+                              <span className={cn("text-[8.5px] font-extrabold uppercase tracking-wide truncate hidden md:inline-block", textPrimary)}>{label}</span>
                             </div>
-                          ) : height < 64 ? (
-                            <div className="flex flex-col justify-between h-full">
-                              <div className="flex items-center justify-between gap-1 shrink-0">
-                                <div className="flex items-center gap-1 min-w-0">
-                                  <Icon className={cn("w-3 h-3 shrink-0", textPrimary)} />
-                                  <span className={cn("text-[8.5px] font-extrabold uppercase tracking-wide truncate", textPrimary)}>{label}</span>
-                                </div>
-                                <span className="text-[8.5px] font-bold text-slate-400 shrink-0">
-                                  {format(start, 'HH:mm')}
-                                </span>
-                              </div>
-                              <div className="text-[10px] font-black text-slate-100 truncate mt-0.5">
-                                {dogNames[booking.dog_id] || "Sconosciuto"}
-                              </div>
+                            <span className="text-[8.5px] font-bold text-slate-400 shrink-0">
+                              {format(start, 'HH:mm')}
+                            </span>
+                          </div>
+                          
+                          {/* Dog name */}
+                          <div className="text-[10px] font-black text-slate-100 truncate my-auto min-w-0 leading-tight">
+                            {dogNames[booking.dog_id] || "Sconosciuto"}
+                          </div>
+
+                          {/* Customer details (only for >30m) */}
+                          {durationMins > 30 && (
+                            <div className="text-[8.5px] text-slate-400 font-bold truncate flex items-center gap-1 shrink-0 mt-0.5">
+                              <User className="w-3 h-3 text-slate-500 shrink-0" />
+                              <span className="truncate">{customerNames[booking.customer_id] || "Cliente"}</span>
                             </div>
-                          ) : (
-                            <>
-                              <div className="flex items-center justify-between gap-1 mb-0.5 shrink-0">
-                                <div className="flex items-center gap-1 min-w-0">
-                                  <Icon className={cn("w-3.5 h-3.5 shrink-0", textPrimary)} />
-                                  <span className={cn("text-[9px] font-black uppercase tracking-wider truncate", textPrimary)}>{label}</span>
-                                </div>
-                                <span className="text-[9px] font-black text-slate-400 shrink-0">
-                                  {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
-                                </span>
-                              </div>
-                              <div className="flex-1 flex flex-col justify-center min-w-0">
-                                <div className="text-xs font-black text-slate-100 truncate flex items-center gap-1">
-                                  <PawPrint className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                  {dogNames[booking.dog_id] || "Sconosciuto"}
-                                </div>
-                                <div className="text-[10px] text-slate-400 font-bold truncate mt-0.5 flex items-center gap-1">
-                                  <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                                  {customerNames[booking.customer_id] || "Cliente"}
-                                </div>
-                              </div>
-                            </>
                           )}
                         </div>
                       </div>
@@ -599,9 +579,9 @@ export function SmartAgenda({
               const dayBookings = weeklyBookings.filter(b => isSameDay(parseISO(b.start_time), day));
 
               return (
-                <div key={idx} className={cn("flex-1 border-r border-slate-800/60 relative min-w-[130px] group/col")}>
+                <div key={idx} className={cn("flex-1 border-r border-slate-800/60 relative min-w-[130px] group/col flex flex-col h-full")}>
                   <div className={cn(
-                    "h-12 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md sticky top-0 z-10 flex flex-col justify-center items-center py-2 text-center shadow-sm",
+                    "h-12 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md sticky top-0 z-10 flex flex-col justify-center items-center py-2 text-center shadow-sm shrink-0",
                     isActiveDay ? "bg-slate-900/40" : ""
                   )}>
                     <p className={cn(
@@ -622,39 +602,45 @@ export function SmartAgenda({
                     </p>
                   </div>
 
-                  <div className="relative bg-slate-950" style={{ height: `${(endHour - startHour) * HOUR_HEIGHT}px` }}>
-                    {Array.from({ length: (endHour - startHour) * 2 }).map((_, i) => {
-                      const isHourLine = i % 2 === 0;
-                      const time = addMinutes(new Date(day).setHours(startHour, 0, 0, 0), i * 30);
-                      return (
-                        <div 
-                          key={i} 
-                          className={cn(
-                            "transition-colors cursor-pointer relative group/cell flex items-center justify-center",
-                            isHourLine ? "border-b border-slate-800/40" : "border-b border-dashed border-slate-800/25",
-                            "hover:bg-slate-900/30"
-                          )}
-                          style={{ height: '30px' }}
-                          onClick={() => setSelectedSlot({ stationId: "", time })}
-                        >
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity bg-cyan-500/[0.03]">
-                            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 text-cyan-400 text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-lg">
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>{format(time, 'HH:mm')}</span>
+                  <div className="relative bg-slate-950 flex-1 min-h-[300px]">
+                    {/* Background slots grid */}
+                    <div className="absolute inset-0 flex flex-col">
+                      {Array.from({ length: (endHour - startHour) * 2 }).map((_, i) => {
+                        const isHourLine = i % 2 === 0;
+                        const time = addMinutes(new Date(day).setHours(startHour, 0, 0, 0), i * 30);
+                        return (
+                          <div 
+                            key={i} 
+                            className={cn(
+                              "transition-colors cursor-pointer relative group/cell flex-1 flex items-center justify-center min-h-[15px]",
+                              isHourLine ? "border-b border-slate-800/40" : "border-b border-dashed border-slate-800/25",
+                              "hover:bg-slate-900/30"
+                            )}
+                            onClick={() => setSelectedSlot({ stationId: "", time })}
+                          >
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity bg-cyan-500/[0.03]">
+                              <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 text-cyan-400 text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-lg">
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>{format(time, 'HH:mm')}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
 
+                    {/* Booking cards in week day column */}
                     {dayBookings.map(booking => {
                       const start = parseISO(booking.start_time);
                       const end = parseISO(booking.end_time);
-                      const startTotalMinutes = (start.getHours() * 60 + start.getMinutes()) - (startHour * 60);
-                      const durationMins = differenceInMinutes(end, start);
                       
-                      const top = startTotalMinutes * MINUTE_SCALE;
-                      const height = durationMins * MINUTE_SCALE;
+                      // Clamp to active hours range
+                      const startMins = Math.max(0, (start.getHours() * 60 + start.getMinutes()) - (startHour * 60));
+                      const endMins = Math.min(totalMinutes, (end.getHours() * 60 + end.getMinutes()) - (startHour * 60));
+                      const durationMins = Math.max(15, endMins - startMins);
+                      
+                      const topPercent = (startMins / totalMinutes) * 100;
+                      const heightPercent = (durationMins / totalMinutes) * 100;
 
                       let accentColor = "from-cyan-500 to-blue-600";
                       let bgColors = "bg-cyan-500/[0.08] hover:bg-cyan-500/[0.12] border-cyan-500/30 shadow-cyan-500/[0.02]";
@@ -669,7 +655,7 @@ export function SmartAgenda({
                         Icon = Sparkles;
                         label = "Assistito";
                       } else if (booking.service_type === "FULL_GROOMING") {
-                        accentColor = "from-fuchsia-500 to-pink-600";
+                        accentColor = "from-fuchsia-500 to-pink-605";
                         bgColors = "bg-fuchsia-500/[0.08] hover:bg-fuchsia-500/[0.12] border-fuchsia-500/30 shadow-fuchsia-500/[0.02]";
                         textPrimary = "text-fuchsia-200";
                         Icon = Scissors;
@@ -685,7 +671,7 @@ export function SmartAgenda({
                             "absolute left-1 right-1 rounded-xl border flex flex-row overflow-hidden p-0 transition-all duration-300 hover:ring-2 hover:ring-white/10 hover:shadow-2xl hover:z-10 cursor-pointer active:scale-[0.98]",
                             bgColors
                           )}
-                          style={{ top: `${top + 1.5}px`, height: `${height - 3}px` }}
+                          style={{ top: `calc(${topPercent}% + 2px)`, height: `calc(${heightPercent}% - 4px)` }}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedSlot({ stationId: booking.station_id, time: start });
@@ -694,45 +680,24 @@ export function SmartAgenda({
                           }}
                         >
                           <div className={cn("w-1 shrink-0 bg-gradient-to-b", accentColor)} />
-                          <div className="flex-1 flex flex-col p-1 min-w-0 justify-between">
-                            {height < 38 ? (
-                              <div className="flex items-center justify-between gap-1 w-full h-full">
-                                <span className="text-[9px] font-black text-slate-100 truncate">
-                                  {dogNames[booking.dog_id] || "Sconosciuto"}
-                                </span>
-                                <span className="text-[8px] font-bold text-slate-400 shrink-0">
-                                  {format(start, 'HH:mm')}
-                                </span>
+                          <div className="flex-1 flex flex-col p-1 min-w-0 justify-between h-full overflow-hidden">
+                            {/* Header row */}
+                            <div className="flex items-center justify-between gap-0.5 w-full min-w-0 shrink-0">
+                              <span className="text-[8px] font-extrabold text-slate-350 truncate">{stName}</span>
+                              <span className="text-[8px] font-bold text-slate-400 shrink-0">{format(start, 'HH:mm')}</span>
+                            </div>
+
+                            {/* Dog name */}
+                            <div className="text-[9.5px] font-black text-slate-100 truncate my-auto min-w-0 leading-tight">
+                              {dogNames[booking.dog_id] || "Sconosciuto"}
+                            </div>
+
+                            {/* Customer details (only for >30m) */}
+                            {durationMins > 30 && (
+                              <div className="text-[8px] text-slate-400 font-bold truncate flex items-center gap-1 shrink-0 mt-0.5">
+                                <User className="w-2.5 h-2.5 text-slate-500 shrink-0" />
+                                <span className="truncate">{customerNames[booking.customer_id] || "Cliente"}</span>
                               </div>
-                            ) : height < 64 ? (
-                              <div className="flex flex-col justify-between h-full">
-                                <div className="flex items-center justify-between gap-0.5 shrink-0">
-                                  <span className="text-[8px] font-extrabold text-slate-300 truncate">{stName}</span>
-                                  <span className="text-[8px] font-bold text-slate-400 shrink-0">{format(start, 'HH:mm')}</span>
-                                </div>
-                                <div className="text-[10px] font-black text-slate-100 truncate">
-                                  {dogNames[booking.dog_id] || "Sconosciuto"}
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="flex items-center justify-between gap-1 mb-0.5 shrink-0">
-                                  <span className="text-[8px] font-extrabold text-slate-300 truncate">{stName}</span>
-                                  <span className="text-[8px] font-bold text-slate-400 shrink-0">
-                                    {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
-                                  </span>
-                                </div>
-                                <div className="flex-1 flex flex-col justify-center min-w-0">
-                                  <div className="text-[11px] font-black text-slate-100 truncate flex items-center gap-1">
-                                    <PawPrint className="w-3 h-3 text-slate-400 shrink-0" />
-                                    {dogNames[booking.dog_id] || "Sconosciuto"}
-                                  </div>
-                                  <div className="text-[9px] text-slate-400 font-bold truncate mt-0.5 flex items-center gap-1">
-                                    <User className="w-3 h-3 text-slate-500 shrink-0" />
-                                    {customerNames[booking.customer_id] || "Cliente"}
-                                  </div>
-                                </div>
-                              </>
                             )}
                           </div>
                         </div>
@@ -744,10 +709,10 @@ export function SmartAgenda({
             })}
 
             {/* CURRENT TIME INDICATOR LINE */}
-            {showCurrentTimeLine && currentTimePosition > 0 && currentTimePosition < (endHour - startHour) * HOUR_HEIGHT && (
+            {showCurrentTimeLine && currentTimePercent > 0 && currentTimePercent < 100 && (
               <div 
                 className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
-                style={{ top: `${currentTimePosition}px` }}
+                style={{ top: `calc(${currentTimePercent}% + 48px)`, transform: 'translateY(-50%)' }}
               >
                 <div className="w-16 shrink-0 flex justify-end pr-1.5">
                   <span className="text-[9px] font-black text-rose-500 bg-rose-950/60 border border-rose-500/30 px-1 py-0.5 rounded shadow">

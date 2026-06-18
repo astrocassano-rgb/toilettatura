@@ -188,7 +188,7 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
       </Card>
 
       {rows.length ? (
-        <div className="h-[800px] mt-6">
+        <div className="h-[calc(100vh-230px)] min-h-[600px] mt-6">
           <SmartAgenda
             bookings={rows}
             stations={stations ?? []}
