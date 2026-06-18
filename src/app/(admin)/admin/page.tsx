@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { RevenueChart } from "@/components/admin/revenue-chart";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import {
@@ -38,6 +39,8 @@ export default async function AdminHomePage() {
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
   const monthStart = startOfMonth(now).toISOString();
 
+  const fourteenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 13).toISOString();
+
   // Fetch tutti i dati in parallelo
   const [
     { data: sessionsData },
@@ -45,6 +48,7 @@ export default async function AdminHomePage() {
     { data: customersData },
     { data: monthCharges },
     { data: alertBookings },
+    { data: chartCharges },
   ] = await Promise.all([
     // Sessioni attive
     supabase.from("active_sessions").select("id, station_id", { count: "exact" }),
@@ -68,6 +72,12 @@ export default async function AdminHomePage() {
       .from("bookings")
       .select("id")
       .eq("status", "PENDING" as any),
+    // Transazioni ultimi 14 giorni per grafico
+    supabase
+      .from("token_transactions")
+      .select("amount_currency, created_at")
+      .eq("type", "CHARGE" as any)
+      .gte("created_at", fourteenDaysAgo),
   ]);
 
   const liveSessions = sessionsData?.length ?? 0;
@@ -76,6 +86,16 @@ export default async function AdminHomePage() {
   const totalCustomers = customersData?.length ?? 0;
   const monthRevenue = (monthCharges ?? []).reduce((sum, t) => sum + Number((t as { amount_currency?: string | null }).amount_currency ?? 0), 0);
   const pendingCount = alertBookings?.length ?? 0;
+
+  // Prepara dati grafico
+  const revenueByDate: Record<string, number> = {};
+  ((chartCharges as any[]) ?? []).forEach((c) => {
+    if (!c.created_at) return;
+    const date = c.created_at.split("T")[0];
+    const amount = Number(c.amount_currency ?? 0);
+    revenueByDate[date] = (revenueByDate[date] ?? 0) + amount;
+  });
+  const chartData = Object.entries(revenueByDate).map(([date, amount]) => ({ date, amount }));
 
   // Alert critici
   const alerts: { label: string; tone: "amber" | "rose" | "emerald" }[] = [];
@@ -198,6 +218,17 @@ export default async function AdminHomePage() {
           );
         })}
       </div>
+
+      {/* Analytics Chart */}
+      <Card>
+        <CardHeader className="space-y-1">
+          <p className="text-xs font-medium text-slate-400">Analitiche</p>
+          <p className="text-lg font-semibold tracking-tight">Fatturato (Ultimi 14 giorni)</p>
+        </CardHeader>
+        <CardContent>
+          <RevenueChart data={chartData} />
+        </CardContent>
+      </Card>
 
       {/* Quick links */}
       <Card>

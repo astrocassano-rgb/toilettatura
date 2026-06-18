@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logAdminAction } from "@/lib/admin/audit";
 
 function isAdminUser(user: any) {
   return Boolean(user && user.app_metadata && user.app_metadata.role === "admin");
@@ -36,6 +37,9 @@ export async function POST(request: Request) {
   if (error) {
     return Response.json({ error: error.message }, { status: 400 });
   }
+
+  // Audit log
+  await logAdminAction(user.id, "MANUAL_TOPUP", "wallet", customerId, { amount, reason });
 
   return Response.redirect(referer, 303);
 }

@@ -7,10 +7,10 @@ import type { LucideIcon } from "lucide-react";
 interface AdminNavLinkProps {
   href: string;
   label: string;
-  Icon: LucideIcon;
+  iconNode: React.ReactNode;
 }
 
-export function AdminNavLink({ href, label, Icon }: AdminNavLinkProps) {
+export function AdminNavLink({ href, label, iconNode }: AdminNavLinkProps) {
   const pathname = usePathname() ?? "";
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
@@ -26,9 +26,9 @@ export function AdminNavLink({ href, label, Icon }: AdminNavLinkProps) {
         }
       `}
     >
-      <Icon
-        className={`h-4 w-4 shrink-0 ${isActive ? "text-cyan-400" : "text-slate-500"}`}
-      />
+      <div className={`flex shrink-0 items-center justify-center ${isActive ? "text-cyan-400" : "text-slate-500"}`}>
+        {iconNode}
+      </div>
       {label}
     </Link>
   );

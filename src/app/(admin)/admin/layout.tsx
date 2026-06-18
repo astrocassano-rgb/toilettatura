@@ -12,6 +12,7 @@ import {
   Monitor,
   Zap,
   ChevronRight,
+  ClipboardList,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/admin/pagamenti",    label: "Pagamenti",     Icon: CreditCard },
   { href: "/admin/postazioni",   label: "Postazioni",    Icon: MapPin },
   { href: "/admin/coupons",      label: "Coupon",        Icon: Tag },
+  { href: "/admin/audit-logs",   label: "Registro Azioni", Icon: ClipboardList },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -70,7 +72,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 key={item.href}
                 href={item.href}
                 label={item.label}
-                Icon={item.Icon}
+                iconNode={<item.Icon className="h-4 w-4" />}
               />
             ))}
           </nav>
