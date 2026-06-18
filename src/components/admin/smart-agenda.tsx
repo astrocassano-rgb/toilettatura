@@ -53,6 +53,9 @@ interface SmartAgendaProps {
 }
 
 const SLOT_MINUTES = 30;
+// COMPACT SCALE: 1 hour = 60px (30px per half-hour slot). 1 minute = 1px.
+const HOUR_HEIGHT = 60;
+const MINUTE_SCALE = 1.0;
 
 export function SmartAgenda({
   bookings,
@@ -181,10 +184,10 @@ export function SmartAgenda({
     return load;
   }, [dailyBookings, numSlots, selectedDate, startHour]);
 
-  // Generate date carousel strip (5 days before, selected, 5 days after)
+  // Generate date carousel strip (6 days before, selected, 6 days after)
   const dateStrip = useMemo(() => {
     const dates = [];
-    for (let i = -5; i <= 5; i++) {
+    for (let i = -6; i <= 6; i++) {
       dates.push(addDays(selectedDate, i));
     }
     return dates;
@@ -196,6 +199,11 @@ export function SmartAgenda({
     params.set("from", dateStr);
     params.set("to", dateStr);
     router.push(`/admin/prenotazioni?${params.toString()}`);
+  };
+
+  const shiftSelectedDate = (days: number) => {
+    const newDate = addDays(selectedDate, days);
+    handleDateClick(newDate);
   };
 
   const hasBookingOnDay = (date: Date) => {
@@ -218,14 +226,13 @@ export function SmartAgenda({
     const currentMins = currentTime.getHours() * 60 + currentTime.getMinutes();
     const startMins = startHour * 60;
     const diff = currentMins - startMins;
-    // 1 minute = 1.6px (96px per hour)
-    return diff * 1.6;
+    return diff * MINUTE_SCALE;
   }, [currentTime, showCurrentTimeLine, startHour]);
 
   return (
     <div className="flex flex-col h-full bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden shadow-2xl transition-all duration-300">
       
-      {/* 1. APPLE-STYLE DATE STRIP CAROUSEL */}
+      {/* 1. APPLE-STYLE DATE STRIP CAROUSEL WITH NAVIGATION CHEVRONS */}
       <div className="bg-slate-900/30 backdrop-blur-md border-b border-slate-800/80 p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
@@ -235,43 +242,63 @@ export function SmartAgenda({
             {format(selectedDate, "EEEE d MMMM yyyy", { locale: it })}
           </span>
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none custom-scrollbar">
-          {dateStrip.map((date, idx) => {
-            const isSelected = isSameDay(date, selectedDate);
-            const isToday = isSameDay(date, new Date());
-            const hasBookings = hasBookingOnDay(date);
+        
+        {/* Navigation Chevrons + Scrollable list */}
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => shiftSelectedDate(-7)} 
+            className="p-2 bg-slate-900/60 border border-slate-800/80 rounded-xl hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"
+            title="Settimana precedente"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
 
-            return (
-              <button
-                key={idx}
-                onClick={() => handleDateClick(date)}
-                className={cn(
-                  "flex-shrink-0 flex flex-col items-center justify-center w-14 py-3 rounded-xl border transition-all duration-300 relative overflow-hidden group",
-                  isSelected
-                    ? "bg-gradient-to-b from-cyan-500 to-blue-600 border-cyan-400 text-white shadow-lg shadow-cyan-500/20 scale-105"
-                    : "bg-slate-900/40 border-slate-800/60 hover:border-slate-700 text-slate-400 hover:text-slate-200"
-                )}
-              >
-                <span className="text-[9px] uppercase tracking-wider font-extrabold mb-1 opacity-70">
-                  {format(date, "EEE", { locale: it }).slice(0, 3)}
-                </span>
-                <span className="text-lg font-black leading-none">
-                  {format(date, "d")}
-                </span>
-                <span className="text-[9px] opacity-70 mt-1 font-medium">
-                  {format(date, "MMM", { locale: it })}
-                </span>
-                
-                {/* Dots indicator */}
-                {hasBookings && (
-                  <span className={cn(
-                    "w-1.5 h-1.5 rounded-full mt-2 transition-all",
-                    isSelected ? "bg-white scale-125" : isToday ? "bg-cyan-400" : "bg-slate-500"
-                  )} />
-                )}
-              </button>
-            );
-          })}
+          <div className="flex-1 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none custom-scrollbar">
+            {dateStrip.map((date, idx) => {
+              const isSelected = isSameDay(date, selectedDate);
+              const isToday = isSameDay(date, new Date());
+              const hasBookings = hasBookingOnDay(date);
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleDateClick(date)}
+                  className={cn(
+                    "flex-shrink-0 flex flex-col items-center justify-center w-[52px] py-2.5 rounded-xl border transition-all duration-300 relative overflow-hidden group",
+                    isSelected
+                      ? "bg-gradient-to-b from-cyan-500 to-blue-600 border-cyan-400 text-white shadow-lg shadow-cyan-500/20 scale-105"
+                      : "bg-slate-900/40 border-slate-800/60 hover:border-slate-700 text-slate-400 hover:text-slate-200"
+                  )}
+                >
+                  <span className="text-[8px] uppercase tracking-wider font-extrabold mb-0.5 opacity-70">
+                    {format(date, "EEE", { locale: it }).slice(0, 3)}
+                  </span>
+                  <span className="text-sm font-black leading-none">
+                    {format(date, "d")}
+                  </span>
+                  <span className="text-[8px] opacity-70 mt-0.5 font-medium">
+                    {format(date, "MMM", { locale: it })}
+                  </span>
+                  
+                  {/* Dots indicator */}
+                  {hasBookings && (
+                    <span className={cn(
+                      "w-1 h-1 rounded-full mt-1 transition-all",
+                      isSelected ? "bg-white scale-125" : isToday ? "bg-cyan-400" : "bg-slate-500"
+                    )} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <button 
+            onClick={() => shiftSelectedDate(7)} 
+            className="p-2 bg-slate-900/60 border border-slate-800/80 rounded-xl hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"
+            title="Settimana successiva"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -306,16 +333,16 @@ export function SmartAgenda({
         </div>
       </div>
 
-      {/* 3. GOOGLE CALENDAR STYLE GRID */}
+      {/* 3. GOOGLE CALENDAR STYLE COMPACT GRID */}
       <div className="flex-1 overflow-auto relative custom-scrollbar bg-slate-950" ref={gridContainerRef}>
         <div className="min-w-[800px] flex relative select-none">
           
-          {/* Time Axis Column */}
+          {/* Time Axis Column - Height: 60px per hour */}
           <div className="w-16 flex-shrink-0 border-r border-slate-800 bg-slate-950 sticky left-0 z-20 shadow-2xl">
             <div className="h-12 border-b border-slate-800/80 bg-slate-950 sticky top-0 z-30" />
             {Array.from({ length: endHour - startHour }).map((_, i) => (
-              <div key={i} className="h-24 border-b border-slate-800/30 relative">
-                <span className="absolute -top-2.5 left-2.5 text-[10px] font-black tracking-tight text-slate-500 bg-slate-950 px-1 py-0.5 rounded border border-slate-800/60 shadow-md">
+              <div key={i} className="h-[60px] border-b border-slate-800/30 relative">
+                <span className="absolute -top-2.5 left-2 text-[10px] font-black tracking-tight text-slate-500 bg-slate-950 px-1 py-0.5 rounded border border-slate-800/60 shadow-md">
                   {String(startHour + i).padStart(2, '0')}:00
                 </span>
               </div>
@@ -328,12 +355,12 @@ export function SmartAgenda({
               
               {/* Sticky Station Header */}
               <div className="h-12 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md sticky top-0 z-10 flex flex-col justify-center items-center px-2 text-center shadow-sm">
-                <p className="text-sm font-bold text-slate-200 truncate w-full tracking-tight">{station.name}</p>
-                <p className="text-[9px] text-cyan-400/80 font-extrabold uppercase tracking-widest mt-0.5">{station.type.replace('_', ' ')}</p>
+                <p className="text-xs font-black text-slate-200 truncate w-full tracking-tight">{station.name}</p>
+                <p className="text-[8px] text-cyan-400/80 font-extrabold uppercase tracking-widest mt-0.5">{station.type.replace('_', ' ')}</p>
               </div>
 
-              {/* Grid Cells (Google Calendar Style) */}
-              <div className="relative bg-slate-950" style={{ height: `${(endHour - startHour) * 96}px` }}>
+              {/* Grid Cells - 30px per half-hour slot */}
+              <div className="relative bg-slate-950" style={{ height: `${(endHour - startHour) * HOUR_HEIGHT}px` }}>
                 
                 {/* Grid Divider Lines spanning across */}
                 {Array.from({ length: (endHour - startHour) * 2 }).map((_, i) => {
@@ -344,18 +371,19 @@ export function SmartAgenda({
                     <div 
                       key={i} 
                       className={cn(
-                        "h-12 border-b transition-colors cursor-pointer relative group/cell flex items-center justify-center",
-                        isHourLine ? "border-slate-800/40" : "border-dashed border-slate-800/20",
+                        "transition-colors cursor-pointer relative group/cell flex items-center justify-center",
+                        isHourLine ? "border-b border-slate-800/40" : "border-b border-dashed border-slate-800/25",
                         "hover:bg-slate-900/30"
                       )}
+                      style={{ height: '30px' }}
                       onClick={() => {
                         setSelectedSlot({ stationId: station.id, time });
                       }}
                     >
                       {/* Plus icon on hover */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity bg-cyan-500/[0.03]">
-                        <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 text-cyan-400 text-[10px] font-black px-2 py-1 rounded-full shadow-lg">
-                          <Plus className="w-3.5 h-3.5" />
+                        <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 text-cyan-400 text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg">
+                          <Plus className="w-3 h-3" />
                           <span>{format(time, 'HH:mm')}</span>
                         </div>
                       </div>
@@ -371,26 +399,26 @@ export function SmartAgenda({
                   const startTotalMinutes = (start.getHours() * 60 + start.getMinutes()) - (startHour * 60);
                   const durationMins = differenceInMinutes(end, start);
                   
-                  // Position & scale calculations
-                  const top = startTotalMinutes * 1.6;
-                  const height = durationMins * 1.6;
+                  // Position & scale calculations: 1 minute = 1.0px (60px/hour)
+                  const top = startTotalMinutes * MINUTE_SCALE;
+                  const height = durationMins * MINUTE_SCALE;
 
                   // Dynamic styles according to service type (Google Calendar look)
                   let accentColor = "from-cyan-500 to-blue-600";
-                  let bgColors = "bg-cyan-500/[0.08] hover:bg-cyan-500/[0.12] border-cyan-500/30";
+                  let bgColors = "bg-cyan-500/[0.08] hover:bg-cyan-500/[0.12] border-cyan-500/30 shadow-cyan-500/[0.02]";
                   let textPrimary = "text-cyan-200";
                   let Icon = PawPrint;
                   let label = "Self-Service";
 
                   if (booking.service_type === "ASSISTED_WASH") {
                     accentColor = "from-blue-500 to-indigo-600";
-                    bgColors = "bg-blue-500/[0.08] hover:bg-blue-500/[0.12] border-blue-500/30";
+                    bgColors = "bg-blue-500/[0.08] hover:bg-blue-500/[0.12] border-blue-500/30 shadow-blue-500/[0.02]";
                     textPrimary = "text-blue-200";
                     Icon = Sparkles;
                     label = "Assistito";
                   } else if (booking.service_type === "FULL_GROOMING") {
                     accentColor = "from-fuchsia-500 to-pink-600";
-                    bgColors = "bg-fuchsia-500/[0.08] hover:bg-fuchsia-500/[0.12] border-fuchsia-500/30";
+                    bgColors = "bg-fuchsia-500/[0.08] hover:bg-fuchsia-500/[0.12] border-fuchsia-500/30 shadow-fuchsia-500/[0.02]";
                     textPrimary = "text-fuchsia-200";
                     Icon = Scissors;
                     label = "Grooming";
@@ -400,54 +428,79 @@ export function SmartAgenda({
                     <div
                       key={booking.id}
                       className={cn(
-                        "absolute left-2 right-2 rounded-xl border flex flex-row overflow-hidden p-0 transition-all duration-300 hover:ring-2 hover:ring-white/10 hover:shadow-2xl hover:z-10 cursor-pointer active:scale-[0.98]",
+                        "absolute left-2.5 right-2.5 rounded-xl border flex flex-row overflow-hidden p-0 transition-all duration-300 hover:ring-2 hover:ring-white/10 hover:shadow-2xl hover:z-10 cursor-pointer active:scale-[0.98]",
                         bgColors
                       )}
-                      style={{ top: `${top + 2}px`, height: `${height - 4}px` }}
+                      style={{ top: `${top + 1.5}px`, height: `${height - 3}px` }}
                       onClick={(e) => {
                         e.stopPropagation(); // Avoid triggering slot creation
-                        // Populate modal for editing or viewing
                         setSelectedSlot({ stationId: booking.station_id, time: start });
                         setSelectedCustomerId(booking.customer_id);
                         setModalDuration(durationMins);
                       }}
                     >
-                      {/* Left accent bar (Cal.com / Google Calendar style) */}
-                      <div className={cn("w-1.5 shrink-0 bg-gradient-to-b", accentColor)} />
+                      {/* Left accent bar */}
+                      <div className={cn("w-1 shrink-0 bg-gradient-to-b", accentColor)} />
 
-                      {/* Card Body */}
-                      <div className="flex-1 flex flex-col p-2 min-w-0 justify-between">
-                        
-                        {/* Header info */}
-                        <div className="flex items-center justify-between gap-1 mb-1 shrink-0">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <Icon className={cn("w-3.5 h-3.5 shrink-0", textPrimary)} />
-                            <span className={cn("text-[9px] font-black uppercase tracking-wider truncate", textPrimary)}>{label}</span>
-                          </div>
-                          <span className="text-[9px] font-black text-slate-400 shrink-0">
-                            {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
-                          </span>
-                        </div>
-                        
-                        {/* Client & Dog details (only shown if height is enough) */}
-                        {height >= 56 && (
-                          <div className="flex-1 flex flex-col justify-center min-w-0">
-                            <div className="text-xs font-black text-slate-100 truncate flex items-center gap-1">
-                              <PawPrint className="w-3 h-3 text-slate-400 shrink-0" />
-                              {dogNames[booking.dog_id] || "Cane sconosciuto"}
+                      {/* Card Body with responsive sizing layouts */}
+                      <div className="flex-1 flex flex-col p-1.5 min-w-0 justify-between">
+                        {height < 38 ? (
+                          /* Micro layout (for 30 minutes slots - 30px height) */
+                          <div className="flex items-center justify-between gap-1.5 w-full h-full">
+                            <div className="flex items-center gap-1 min-w-0">
+                              <Icon className={cn("w-3 h-3 shrink-0", textPrimary)} />
+                              <span className="text-[10px] font-black text-slate-100 truncate">
+                                {dogNames[booking.dog_id] || "Sconosciuto"}
+                              </span>
                             </div>
-                            <div className="text-[10px] text-slate-400 font-bold truncate mt-0.5 flex items-center gap-1">
-                              <User className="w-3 h-3 text-slate-500 shrink-0" />
-                              {customerNames[booking.customer_id] || "Cliente"}
+                            <span className="text-[8.5px] font-bold text-slate-400 shrink-0">
+                              {format(start, 'HH:mm')}
+                            </span>
+                          </div>
+                        ) : height < 64 ? (
+                          /* Compact layout (for 45-60 min slots - 45px to 60px height) */
+                          <div className="flex flex-col justify-between h-full">
+                            <div className="flex items-center justify-between gap-1 shrink-0">
+                              <div className="flex items-center gap-1 min-w-0">
+                                <Icon className={cn("w-3 h-3 shrink-0", textPrimary)} />
+                                <span className={cn("text-[8.5px] font-extrabold uppercase tracking-wide truncate", textPrimary)}>{label}</span>
+                              </div>
+                              <span className="text-[8.5px] font-bold text-slate-400 shrink-0">
+                                {format(start, 'HH:mm')}
+                              </span>
+                            </div>
+                            <div className="text-[10px] font-black text-slate-100 truncate mt-0.5">
+                              {dogNames[booking.dog_id] || "Sconosciuto"}
                             </div>
                           </div>
-                        )}
-                        
-                        {/* Visual indicator of duration at the bottom of cards */}
-                        {height >= 80 && (
-                          <div className="text-[8px] text-slate-500 font-bold mt-1 shrink-0">
-                            Durata: {durationMins} min
-                          </div>
+                        ) : (
+                          /* Standard layout (for > 60 min slots) */
+                          <>
+                            <div className="flex items-center justify-between gap-1 mb-0.5 shrink-0">
+                              <div className="flex items-center gap-1 min-w-0">
+                                <Icon className={cn("w-3.5 h-3.5 shrink-0", textPrimary)} />
+                                <span className={cn("text-[9px] font-black uppercase tracking-wider truncate", textPrimary)}>{label}</span>
+                              </div>
+                              <span className="text-[9px] font-black text-slate-400 shrink-0">
+                                {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
+                              </span>
+                            </div>
+                            <div className="flex-1 flex flex-col justify-center min-w-0">
+                              <div className="text-xs font-black text-slate-100 truncate flex items-center gap-1">
+                                <PawPrint className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                {dogNames[booking.dog_id] || "Sconosciuto"}
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-bold truncate mt-0.5 flex items-center gap-1">
+                                <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                {customerNames[booking.customer_id] || "Cliente"}
+                              </div>
+                            </div>
+                            {height >= 80 && (
+                              <div className="text-[8px] text-slate-500 font-bold mt-0.5 shrink-0">
+                                Durata: {durationMins} min
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -457,20 +510,18 @@ export function SmartAgenda({
             </div>
           ))}
 
-          {/* DYNAMIC CURRENT TIME INDICATOR LINE (Google Calendar Style) */}
-          {showCurrentTimeLine && currentTimePosition > 0 && currentTimePosition < (endHour - startHour) * 96 && (
+          {/* DYNAMIC CURRENT TIME INDICATOR LINE */}
+          {showCurrentTimeLine && currentTimePosition > 0 && currentTimePosition < (endHour - startHour) * HOUR_HEIGHT && (
             <div 
               className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
               style={{ top: `${currentTimePosition}px` }}
             >
-              {/* The Line Indicator */}
               <div className="w-16 shrink-0 flex justify-end pr-1.5">
                 <span className="text-[9px] font-black text-rose-500 bg-rose-950/60 border border-rose-500/30 px-1 py-0.5 rounded shadow">
                   {format(currentTime, 'HH:mm')}
                 </span>
               </div>
               <div className="flex-1 h-[2px] bg-rose-500 relative">
-                {/* Pulse dot at the beginning */}
                 <span className="absolute -left-1 -top-[4px] w-[10px] h-[10px] bg-rose-500 rounded-full shadow-lg ring-4 ring-rose-500/20 animate-ping" />
                 <span className="absolute -left-1 -top-[4px] w-[10px] h-[10px] bg-rose-500 rounded-full shadow-md" />
               </div>
@@ -480,7 +531,7 @@ export function SmartAgenda({
         </div>
       </div>
 
-      {/* 4. ADMIN BOOKING MODAL (ADJUSTABLE DATE/TIME/DURATION) */}
+      {/* 4. ADMIN BOOKING MODAL */}
       {selectedSlot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">

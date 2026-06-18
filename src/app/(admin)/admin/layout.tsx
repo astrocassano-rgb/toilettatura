@@ -50,10 +50,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <aside className="flex h-fit flex-col rounded-3xl border border-slate-800/80 bg-slate-950/70 p-4 backdrop-blur-md md:sticky md:top-6">
           {/* Logo brand */}
           <div className="mb-5 flex items-center gap-3 px-1">
-            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 p-1 shadow-lg">
-              <span className="font-bold text-slate-100">DW</span>
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-lg p-0.5">
+              <Image
+                src="/logo.png"
+                alt="DogWash24 Logo"
+                width={32}
+                height={32}
+                priority
+                className="h-full w-full object-contain rounded-lg"
+              />
               {/* Live dot */}
-              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />
+              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400 z-10" />
             </div>
             <div>
               <p className="text-sm font-bold tracking-tight text-slate-50">DogWash24</p>
