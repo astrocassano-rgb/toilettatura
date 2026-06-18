@@ -59,22 +59,16 @@ type StatusFilter = "NOT_CANCELLED" | "ALL" | "PENDING" | "CONFIRMED" | "COMPLET
 
 export default async function AdminPrenotazioniPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
   const params = (await searchParams) ?? {};
-  
   // Get active date parameter (default is today)
   const dateRaw = typeof params.date === "string" ? params.date : format(new Date(), "yyyy-MM-dd");
   
-  // Parse date and calculate start/end of its week
+  // Parse date and calculate start/end of its month
   const activeDate = parseISO(dateRaw.includes("T") ? dateRaw : `${dateRaw}T12:00:00`);
-  const dayOfWeek = activeDate.getDay();
-  const diffToMonday = activeDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-  const activeMonday = new Date(activeDate.getTime());
-  activeMonday.setDate(diffToMonday);
-  
-  const activeSunday = new Date(activeMonday.getTime());
-  activeSunday.setDate(activeMonday.getDate() + 6);
+  const startOfActiveMonth = new Date(activeDate.getFullYear(), activeDate.getMonth(), 1);
+  const endOfActiveMonth = new Date(activeDate.getFullYear(), activeDate.getMonth() + 1, 0);
 
-  const defaultFrom = format(activeMonday, "yyyy-MM-dd");
-  const defaultTo = format(activeSunday, "yyyy-MM-dd");
+  const defaultFrom = format(startOfActiveMonth, "yyyy-MM-dd");
+  const defaultTo = format(endOfActiveMonth, "yyyy-MM-dd");
 
   const fromRaw = typeof params.from === "string" ? params.from : defaultFrom;
   const toRaw = typeof params.to === "string" ? params.to : defaultTo;
@@ -84,11 +78,9 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
     ? statusRaw
     : "NOT_CANCELLED") as StatusFilter;
 
-
-
   const { supabase } = await requireAdmin({ next: "/admin/prenotazioni", mode: "notFound" });
 
-    let query = supabase
+  let query = supabase
     .from("bookings")
     .select("id, customer_id, dog_id, station_id, start_time, end_time, status, total_credits, created_at, service_type")
     .order("start_time", { ascending: false });
