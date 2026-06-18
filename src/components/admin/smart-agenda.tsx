@@ -233,15 +233,6 @@ export function SmartAgenda({
     return load;
   }, [dailyBookings, weeklyBookings, viewMode, numSlots, selectedDate, startHour]);
 
-  // Date strip dates range (6 days before selected, selected, 6 days after)
-  const dateStrip = useMemo(() => {
-    const dates = [];
-    for (let i = -6; i <= 6; i++) {
-      dates.push(addDays(selectedDate, i));
-    }
-    return dates;
-  }, [selectedDate]);
-
   const handleDateClick = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
     const params = new URLSearchParams(window.location.search);
@@ -269,8 +260,16 @@ export function SmartAgenda({
     handleDateClick(newDate);
   };
 
-  const hasBookingOnDay = (date: Date) => {
-    return bookings.some(b => isSameDay(parseISO(b.start_time), date) && b.status !== 'CANCELLED');
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(parseInt(e.target.value));
+    handleDateClick(newDate);
+  };
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newDate = new Date(selectedDate);
+    newDate.setFullYear(parseInt(e.target.value));
+    handleDateClick(newDate);
   };
 
   const modalTimeOptions = useMemo(() => {
@@ -292,114 +291,115 @@ export function SmartAgenda({
     return diff * MINUTE_SCALE;
   }, [currentTime, showCurrentTimeLine, startHour]);
 
+  // Date selection helper bounds
+  const months = [
+    "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+    "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+  ];
+
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const list = [];
+    for (let y = currentYear - 3; y <= currentYear + 5; y++) {
+      list.push(y);
+    }
+    return list;
+  }, []);
+
   return (
     <div className="flex flex-col h-full bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden shadow-2xl transition-all duration-300">
       
-      {/* 1. APPLE-STYLE DATE STRIP CAROUSEL WITH VIEW SELECTOR */}
-      <div className="bg-slate-900/30 backdrop-blur-md border-b border-slate-800/80 p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-cyan-400" /> Calendario Impegni
-            </h3>
-            <p className="text-[10px] text-slate-400 font-semibold">
-              {format(selectedDate, "EEEE d MMMM yyyy", { locale: it })}
-            </p>
-          </div>
-          
-          {/* Day / Week / Month View Selector Tab Switch */}
-          <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 shadow-inner">
-            <button
-              onClick={() => setViewMode("giorno")}
-              className={cn(
-                "px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200",
-                viewMode === "giorno" 
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md" 
-                  : "text-slate-400 hover:text-slate-200"
-              )}
-            >
-              Giorno
-            </button>
-            <button
-              onClick={() => setViewMode("settimana")}
-              className={cn(
-                "px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200",
-                viewMode === "settimana" 
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md" 
-                  : "text-slate-400 hover:text-slate-200"
-              )}
-            >
-              Settimana
-            </button>
-            <button
-              onClick={() => setViewMode("mese")}
-              className={cn(
-                "px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200",
-                viewMode === "mese" 
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md" 
-                  : "text-slate-400 hover:text-slate-200"
-              )}
-            >
-              Mese
-            </button>
-          </div>
-        </div>
+      {/* 1. CALENDAR CONTROLS & DROPDOWN HEADER */}
+      <div className="bg-slate-900/30 backdrop-blur-md border-b border-slate-800/80 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         
-        {/* Navigation Chevrons + Scrollable list */}
+        {/* Title + Today Button */}
+        <div className="flex items-center gap-3">
+          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-cyan-400" /> Calendario Impegni
+          </h3>
+          <button
+            onClick={() => handleDateClick(new Date())}
+            className="px-3 py-1.5 bg-slate-900 border border-slate-800/80 hover:bg-slate-800 text-[10px] font-black rounded-lg text-slate-300 hover:text-white transition-colors"
+          >
+            Oggi
+          </button>
+        </div>
+
+        {/* Date Navigator Month/Year dropdown Controls */}
         <div className="flex items-center gap-2">
           <button 
             onClick={() => shiftSelectedDate(-1)} 
-            className="p-2 bg-slate-900/60 border border-slate-800/80 rounded-xl hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"
+            className="p-2 bg-slate-900 border border-slate-800/80 rounded-xl hover:bg-slate-850 text-slate-400 hover:text-white transition-colors"
             title={viewMode === "mese" ? "Mese precedente" : viewMode === "settimana" ? "Settimana precedente" : "Giorno precedente"}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="flex-1 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {dateStrip.map((date, idx) => {
-              const isSelected = isSameDay(date, selectedDate);
-              const isToday = isSameDay(date, new Date());
-              const hasBookings = hasBookingOnDay(date);
+          {/* Month Selector */}
+          <select
+            value={selectedDate.getMonth()}
+            onChange={handleMonthChange}
+            className="h-9 rounded-xl bg-slate-900 border border-slate-800 px-3 text-xs font-black text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors"
+          >
+            {months.map((m, idx) => (
+              <option key={idx} value={idx}>{m}</option>
+            ))}
+          </select>
 
-              return (
-                <button
-                  key={idx}
-                  onClick={() => handleDateClick(date)}
-                  className={cn(
-                    "flex-shrink-0 flex flex-col items-center justify-center w-[52px] py-2.5 rounded-xl border transition-all duration-300 relative overflow-hidden group",
-                    isSelected
-                      ? "bg-gradient-to-b from-cyan-500 to-blue-600 border-cyan-400 text-white shadow-lg shadow-cyan-500/20 scale-105"
-                      : "bg-slate-900/40 border-slate-800/60 hover:border-slate-700 text-slate-400 hover:text-slate-200"
-                  )}
-                >
-                  <span className="text-[8px] uppercase tracking-wider font-extrabold mb-0.5 opacity-70">
-                    {format(date, "EEE", { locale: it }).slice(0, 3)}
-                  </span>
-                  <span className="text-sm font-black leading-none">
-                    {format(date, "d")}
-                  </span>
-                  <span className="text-[8px] opacity-70 mt-0.5 font-medium">
-                    {format(date, "MMM", { locale: it })}
-                  </span>
-                  
-                  {/* Dots indicator */}
-                  {hasBookings && (
-                    <span className={cn(
-                      "w-1 h-1 rounded-full mt-1 transition-all",
-                      isSelected ? "bg-white scale-125" : isToday ? "bg-cyan-400" : "bg-slate-500"
-                    )} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {/* Year Selector */}
+          <select
+            value={selectedDate.getFullYear()}
+            onChange={handleYearChange}
+            className="h-9 rounded-xl bg-slate-900 border border-slate-800 px-3 text-xs font-black text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors"
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
 
           <button 
             onClick={() => shiftSelectedDate(1)} 
-            className="p-2 bg-slate-900/60 border border-slate-800/80 rounded-xl hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"
-            title={viewMode === "mese" ? "Mese successivo" : viewMode === "settimana" ? "Settimana successiva" : "Giorno successivo"}
+            className="p-2 bg-slate-900 border border-slate-800/80 rounded-xl hover:bg-slate-850 text-slate-400 hover:text-white transition-colors"
+            title={viewMode === "mese" ? "Mese successivo" : viewMode === "settimana" ? "Settimana successivo" : "Giorno successivo"}
           >
             <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Day / Week / Month View Selector Tab Switch */}
+        <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 shadow-inner">
+          <button
+            onClick={() => setViewMode("giorno")}
+            className={cn(
+              "px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200",
+              viewMode === "giorno" 
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md" 
+                : "text-slate-400 hover:text-slate-200"
+            )}
+          >
+            Giorno
+          </button>
+          <button
+            onClick={() => setViewMode("settimana")}
+            className={cn(
+              "px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200",
+              viewMode === "settimana" 
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md" 
+                : "text-slate-400 hover:text-slate-200"
+            )}
+          >
+            Settimana
+          </button>
+          <button
+            onClick={() => setViewMode("mese")}
+            className={cn(
+              "px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200",
+              viewMode === "mese" 
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md" 
+                : "text-slate-400 hover:text-slate-200"
+            )}
+          >
+            Mese
           </button>
         </div>
       </div>
@@ -639,7 +639,7 @@ export function SmartAgenda({
                         >
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity bg-cyan-500/[0.03]">
                             <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 text-cyan-400 text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-lg">
-                              <Plus className="w-3 h-3" />
+                              <Plus className="w-3.5 h-3.5" />
                               <span>{format(time, 'HH:mm')}</span>
                             </div>
                           </div>

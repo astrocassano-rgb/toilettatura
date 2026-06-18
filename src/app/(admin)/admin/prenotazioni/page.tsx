@@ -153,20 +153,9 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
           <p className="text-lg font-semibold tracking-tight">Cerca prenotazioni</p>
         </CardHeader>
         <CardContent>
-          <form action="/admin/prenotazioni" method="get" className="grid gap-3 md:grid-cols-4">
-            <div className="space-y-2">
-              <label htmlFor="from" className="text-sm font-medium text-slate-200">
-                Da
-              </label>
-              <Input id="from" name="from" type="date" defaultValue={fromRaw} className="h-11" />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="to" className="text-sm font-medium text-slate-200">
-                A
-              </label>
-              <Input id="to" name="to" type="date" defaultValue={toRaw} className="h-11" />
-            </div>
-            <div className="space-y-2">
+          <form action="/admin/prenotazioni" method="get" className="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="date" value={dateRaw} />
+            <div className="space-y-2 min-w-[200px] flex-1">
               <label htmlFor="status" className="text-sm font-medium text-slate-200">
                 Stato
               </label>
@@ -184,12 +173,12 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
                 <option value="CANCELLED">Annullate</option>
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-2 self-end">
-              <Button type="submit" variant="primary" className="w-full">
+            <div className="flex gap-2">
+              <Button type="submit" variant="primary" className="px-6">
                 Applica
               </Button>
-              <Link href="/admin/prenotazioni" className="w-full">
-                <Button type="button" variant="secondary" className="w-full">
+              <Link href="/admin/prenotazioni">
+                <Button type="button" variant="secondary" className="px-6">
                   Reset
                 </Button>
               </Link>
