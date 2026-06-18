@@ -199,8 +199,8 @@ export default async function AdminClienteDettaglioPage({ params }: { params: Pr
                       {[d.breed, d.size, d.weight ? `${d.weight} kg` : null].filter(Boolean).join(" · ")}
                     </p>
                   </div>
-                  <Link href={`/admin/cani/${d.id}`} className="shrink-0">
-                    <Button variant="secondary" size="icon" className="h-8 w-8 rounded-xl bg-slate-800/50 hover:bg-slate-800 border-0">
+                  <Link href={`/admin/cani/${d.id}` as any} className="shrink-0">
+                    <Button variant="secondary" className="h-8 w-8 rounded-xl bg-slate-800/50 hover:bg-slate-800 border-0 p-0 flex items-center justify-center">
                       <ChevronRight className="h-4 w-4 text-slate-400" />
                     </Button>
                   </Link>

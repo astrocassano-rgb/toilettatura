@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 export default async function ImpostazioniPage() {
   const { supabase } = await requireAdmin();
 
-  const { data: settings } = await supabase.from("system_settings").select("*").eq("id", 1).single();
+  const { data } = await supabase.from("system_settings").select("*").eq("id", 1).maybeSingle();
+  const settings = data as any; // bypass "never" type inference issue
 
   const mode = settings?.mode || "HYBRID";
   const maxAssisted = settings?.max_concurrent_assisted || 1;
