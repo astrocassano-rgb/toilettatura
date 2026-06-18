@@ -5,6 +5,23 @@ import { Input } from "@/components/ui/input";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import type { Database } from "@/types/database";
 
+type BookingStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<BookingStatus, { label: string; cls: string }> = {
+    PENDING:   { label: "In attesa",  cls: "bg-amber-500/15 text-amber-200 ring-amber-500/25" },
+    CONFIRMED: { label: "Confermata", cls: "bg-emerald-500/15 text-emerald-200 ring-emerald-500/25" },
+    COMPLETED: { label: "Completata", cls: "bg-blue-500/15 text-blue-200 ring-blue-500/25" },
+    CANCELLED: { label: "Annullata",  cls: "bg-rose-500/15 text-rose-200 ring-rose-500/25" },
+  };
+  const { label, cls } = map[status as BookingStatus] ?? { label: status, cls: "bg-slate-800 text-slate-300 ring-slate-700" };
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
 type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 type Dog = Pick<Database["public"]["Tables"]["dogs"]["Row"], "id" | "name">;
 type Station = Pick<Database["public"]["Tables"]["stations"]["Row"], "id" | "name" | "type">;
@@ -47,9 +64,7 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
     ? statusRaw
     : "NOT_CANCELLED") as StatusFilter;
 
-  // #region debug-point A:filters-normalized
-  void fetch("http://127.0.0.1:7777/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: "admin-bookings-filter-500", runId: "pre-fix", hypothesisId: "A", location: "src/app/(admin)/admin/prenotazioni/page.tsx", msg: "[DEBUG] Admin bookings filters normalized", data: { params, fromRaw, toRaw, statusRaw, status }, ts: Date.now() }) }).catch(() => {});
-  // #endregion
+
 
   const { supabase } = await requireAdmin({ next: "/admin/prenotazioni", mode: "notFound" });
 
@@ -73,13 +88,7 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
     query = query.eq("status", status as any);
   }
 
-  // #region debug-point B:query-ready
-  void fetch("http://127.0.0.1:7777/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: "admin-bookings-filter-500", runId: "pre-fix", hypothesisId: "B", location: "src/app/(admin)/admin/prenotazioni/page.tsx", msg: "[DEBUG] Admin bookings query ready", data: { fromRaw, toRaw, status }, ts: Date.now() }) }).catch(() => {});
-  // #endregion
-  const { data: bookings, error: bookingsError } = await query.limit(200);
-  // #region debug-point C:query-result
-  void fetch("http://127.0.0.1:7777/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: "admin-bookings-filter-500", runId: "pre-fix", hypothesisId: "C", location: "src/app/(admin)/admin/prenotazioni/page.tsx", msg: "[DEBUG] Admin bookings query result", data: { status, count: bookings?.length ?? 0, error: bookingsError?.message ?? null }, ts: Date.now() }) }).catch(() => {});
-  // #endregion
+  const { data: bookings } = await query.limit(200);
 
   const rows = (bookings ?? []) as Booking[];
   const dogIds = Array.from(new Set(rows.map((b) => b.dog_id))).filter(Boolean);
@@ -104,15 +113,20 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
     customerById[p.id] = fullName || p.email || p.id;
   }
 
-  // #region debug-point D:render-ready
-  void fetch("http://127.0.0.1:7777/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: "admin-bookings-filter-500", runId: "pre-fix", hypothesisId: "D", location: "src/app/(admin)/admin/prenotazioni/page.tsx", msg: "[DEBUG] Admin bookings render ready", data: { rows: rows.length }, ts: Date.now() }) }).catch(() => {});
-  // #endregion
+
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight">Prenotazioni</h2>
-        <p className="text-sm leading-relaxed text-slate-200">Elenco rapido delle ultime prenotazioni e azioni admin.</p>
+      <header className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight">Prenotazioni</h2>
+          <p className="text-sm leading-relaxed text-slate-400">Filtrate e gestisci le prenotazioni dei clienti.</p>
+        </div>
+        {rows.length > 0 && (
+          <span className="shrink-0 rounded-full bg-slate-800/80 px-3 py-1 text-xs font-semibold text-slate-300 ring-1 ring-inset ring-slate-700">
+            {rows.length} risultati
+          </span>
+        )}
       </header>
 
       <Card>
@@ -194,7 +208,10 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-400">Stato: {b.status} · {b.total_credits} crediti</p>
+                      <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                        <StatusBadge status={b.status} />
+                        <span className="text-[11px] text-slate-400">{b.total_credits} crediti</span>
+                      </div>
                     </div>
                     <Link href={`/prenotazioni/${b.id}`} className="shrink-0">
                       <Button variant="secondary">Dettagli</Button>
@@ -219,7 +236,12 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
                     <form action="/api/admin/bookings/status" method="post" className="contents">
                       <input type="hidden" name="booking_id" value={b.id} />
                       <input type="hidden" name="status" value="CANCELLED" />
-                      <Button className="w-full" variant="primary" type="submit" disabled={b.status === "CANCELLED" || b.status === "COMPLETED"}>
+                      <Button
+                        className="w-full bg-rose-500/10 text-rose-300 ring-1 ring-inset ring-rose-500/25 hover:bg-rose-500/20 active:bg-rose-500/30"
+                        variant="ghost"
+                        type="submit"
+                        disabled={b.status === "CANCELLED" || b.status === "COMPLETED"}
+                      >
                         Annulla (rimborsa)
                       </Button>
                     </form>

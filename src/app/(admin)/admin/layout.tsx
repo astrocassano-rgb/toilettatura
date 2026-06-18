@@ -1,19 +1,29 @@
 import * as React from "react";
 import Link from "next/link";
-import type { Route } from "next";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { LogoutButton } from "@/components/layout/logout-button";
+import { AdminNavLink } from "@/components/layout/admin-nav-link";
+import {
+  Calendar,
+  Users,
+  CreditCard,
+  MapPin,
+  Tag,
+  Monitor,
+  Zap,
+  ChevronRight,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 const navItems = [
-  { href: "/admin/prenotazioni", label: "Prenotazioni" },
-  { href: "/admin/sessioni", label: "Sessioni" },
-  { href: "/admin/kiosk", label: "Kiosk" },
-  { href: "/admin/clienti", label: "Clienti" },
-  { href: "/admin/pagamenti", label: "Pagamenti" },
-  { href: "/admin/postazioni", label: "Postazioni" },
-  { href: "/admin/coupons", label: "Coupons" }
+  { href: "/admin/prenotazioni", label: "Prenotazioni", Icon: Calendar },
+  { href: "/admin/sessioni",     label: "Sessioni Live", Icon: Zap },
+  { href: "/admin/kiosk",        label: "Kiosk",         Icon: Monitor },
+  { href: "/admin/clienti",      label: "Clienti",       Icon: Users },
+  { href: "/admin/pagamenti",    label: "Pagamenti",     Icon: CreditCard },
+  { href: "/admin/postazioni",   label: "Postazioni",    Icon: MapPin },
+  { href: "/admin/coupons",      label: "Coupon",        Icon: Tag },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -21,36 +31,68 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-dvh bg-slate-950">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[240px_1fr]">
-        <aside className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
-          <div className="space-y-1 pb-4">
-            <p className="text-xs font-medium text-slate-300">Area Admin</p>
-            <p className="text-lg font-semibold tracking-tight text-slate-50">DogWash24</p>
+      {/* Radial gradient background coerente con brand marketing */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(900px 700px at 15% 0%, rgba(6,182,212,0.06), transparent 60%), radial-gradient(700px 500px at 85% 80%, rgba(20,184,166,0.05), transparent 55%)",
+        }}
+      />
+
+      <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[240px_1fr]">
+        {/* ── SIDEBAR ───────────────────────────────────────── */}
+        <aside className="flex h-fit flex-col rounded-3xl border border-slate-800/80 bg-slate-950/70 p-4 backdrop-blur-md md:sticky md:top-6">
+          {/* Logo brand */}
+          <div className="mb-5 flex items-center gap-3 px-1">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-lg"
+              style={{ background: "linear-gradient(135deg, #06b6d4, #14b8a6)" }}
+            >
+              <span className="text-lg">🐾</span>
+              {/* Live dot */}
+              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold tracking-tight text-slate-50">DogWash24</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                Area Admin
+              </p>
+            </div>
           </div>
-          <nav className="grid gap-2">
+
+          {/* Divider */}
+          <div className="mb-3 h-px bg-slate-800/60" />
+
+          {/* Nav links */}
+          <nav className="flex flex-col gap-1">
             {navItems.map((item) => (
-              <Link
+              <AdminNavLink
                 key={item.href}
-                href={item.href as Route}
-                className="rounded-2xl bg-slate-950/40 px-4 py-3 text-sm font-medium text-slate-100 ring-1 ring-inset ring-slate-800 transition-colors hover:bg-slate-950/60"
-              >
-                {item.label}
-              </Link>
+                href={item.href}
+                label={item.label}
+                Icon={item.Icon}
+              />
             ))}
           </nav>
-          <div className="pt-4">
-            <Link
-              href="/"
-              className="block rounded-2xl bg-slate-950/40 px-4 py-3 text-sm font-medium text-slate-200 ring-1 ring-inset ring-slate-800 transition-colors hover:bg-slate-950/60"
-            >
-              Torna alla app
-            </Link>
-          </div>
-          <div className="pt-3">
+
+          {/* Divider */}
+          <div className="my-4 h-px bg-slate-800/60" />
+
+          {/* Torna alla app */}
+          <Link
+            href="/"
+            className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium text-slate-500 ring-1 ring-inset ring-transparent transition-all hover:bg-slate-800/50 hover:text-slate-300"
+          >
+            <span>Torna alla app</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+
+          <div className="mt-2">
             <LogoutButton />
           </div>
         </aside>
 
+        {/* ── MAIN CONTENT ──────────────────────────────────── */}
         <main className="min-w-0">{children}</main>
       </div>
     </div>

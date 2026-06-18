@@ -11,6 +11,23 @@ type Profile = Pick<Database["public"]["Tables"]["profiles"]["Row"], "id" | "ema
 type SearchParams = Record<string, string | string[] | undefined>;
 type PeriodFilter = "7d" | "30d" | "90d" | "all";
 type MovementFilter = "ALL" | "CHARGE" | "DEBIT" | "BONUS";
+type TxType = "CHARGE" | "DEBIT" | "BONUS" | "ADJUSTMENT" | "REFUND";
+
+function TxBadge({ type }: { type: string }) {
+  const map: Record<TxType, { label: string; cls: string }> = {
+    CHARGE:     { label: "Ricarica",   cls: "bg-emerald-500/15 text-emerald-200 ring-emerald-500/25" },
+    DEBIT:      { label: "Utilizzo",   cls: "bg-rose-500/15 text-rose-200 ring-rose-500/25" },
+    BONUS:      { label: "Bonus",      cls: "bg-blue-500/15 text-blue-200 ring-blue-500/25" },
+    ADJUSTMENT: { label: "Rettifica",  cls: "bg-amber-500/15 text-amber-200 ring-amber-500/25" },
+    REFUND:     { label: "Rimborso",   cls: "bg-violet-500/15 text-violet-200 ring-violet-500/25" },
+  };
+  const { label, cls } = map[type as TxType] ?? { label: type, cls: "bg-slate-800 text-slate-300 ring-slate-700" };
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset ${cls}`}>
+      {label}
+    </span>
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -750,18 +767,23 @@ export default async function AdminPagamentiPage({ searchParams }: { searchParam
             const pack = t.type === "CHARGE" ? inferChargePack(t.amount_credits) : null;
             return (
               <Card key={t.id}>
-                <CardContent className="space-y-2 pt-4">
+                <CardContent className="pt-4">
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-50">
-                        {t.type} · {t.amount_credits} crediti
-                      </p>
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <TxBadge type={t.type} />
+                        <span className="text-sm font-semibold text-slate-50">
+                          {t.type === "DEBIT" ? "-" : "+"}{t.amount_credits} crediti
+                        </span>
+                        {t.amount_currency && Number(t.amount_currency) > 0 && (
+                          <span className="text-xs font-semibold text-emerald-300">{fmtCurrency(Number(t.amount_currency))}</span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-300 truncate">
                         {customer} · {fmt(t.created_at)}
                       </p>
                       <p className="text-[11px] text-slate-400 truncate">
                         {pack ? `Pacchetto: ${pack}` : "Movimento wallet"}
-                        {` · Valore: ${fmtCurrency(Number(t.amount_currency ?? 0))}`}
                         {t.note ? ` · ${t.note}` : ""}
                       </p>
                     </div>

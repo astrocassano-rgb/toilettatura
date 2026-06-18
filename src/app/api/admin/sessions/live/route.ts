@@ -1,6 +1,5 @@
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSessionLive } from "@/lib/active-sessions";
-import { SessioniLiveClient } from "./sessioni-client";
 import type { Database } from "@/types/database";
 
 type SessionRow = Database["public"]["Tables"]["active_sessions"]["Row"];
@@ -9,10 +8,19 @@ type Dog = Pick<Database["public"]["Tables"]["dogs"]["Row"], "id" | "name">;
 type Station = Pick<Database["public"]["Tables"]["stations"]["Row"], "id" | "name">;
 type Profile = Pick<Database["public"]["Tables"]["profiles"]["Row"], "id" | "email" | "first_name" | "last_name">;
 
-export const dynamic = "force-dynamic";
+function isAdminUser(user: Record<string, unknown> | null) {
+  if (!user) return false;
+  const meta = user.app_metadata as Record<string, unknown> | undefined;
+  return meta?.role === "admin";
+}
 
-export default async function AdminSessioniPage() {
-  const { supabase } = await requireAdmin({ next: "/admin/sessioni", mode: "notFound" });
+export async function GET() {
+  const supabase = await createSupabaseServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user as Record<string, unknown> | null;
+
+  if (!user) return Response.json({ error: "Non autenticato" }, { status: 401 });
+  if (!isAdminUser(user)) return Response.json({ error: "Non autorizzato" }, { status: 403 });
 
   const { data: rawSessions } = await supabase.from("active_sessions").select("*").order("activated_at", { ascending: false });
   const liveSessions = ((rawSessions ?? []) as SessionRow[]).filter(isSessionLive);
@@ -21,7 +29,11 @@ export default async function AdminSessioniPage() {
   const customerIds = Array.from(new Set(liveSessions.map((s) => s.customer_id)));
   const stationIds = Array.from(new Set(liveSessions.map((s) => s.station_id)));
 
-  const [{ data: bookings }, { data: profiles }, { data: stations }] = await Promise.all([
+  const [
+    { data: bookings },
+    { data: profiles },
+    { data: stations },
+  ] = await Promise.all([
     bookingIds.length
       ? supabase.from("bookings").select("id, dog_id, station_id, start_time, end_time, status").in("id", bookingIds)
       : Promise.resolve({ data: [] as Booking[] }),
@@ -38,21 +50,5 @@ export default async function AdminSessioniPage() {
     ? await supabase.from("dogs").select("id, name").in("id", dogIds)
     : { data: [] as Dog[] };
 
-  return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-1">
-        <p className="text-xs font-semibold uppercase tracking-widest text-cyan-400">Monitor H24</p>
-        <h2 className="text-2xl font-semibold tracking-tight">Sessioni live</h2>
-        <p className="text-sm text-slate-400">Controllo operativo delle sessioni attive in struttura. Si aggiorna automaticamente.</p>
-      </header>
-
-      <SessioniLiveClient
-        initialSessions={liveSessions}
-        initialBookings={(bookings ?? []) as Booking[]}
-        initialDogs={(dogs ?? []) as Dog[]}
-        initialStations={(stations ?? []) as Station[]}
-        initialProfiles={(profiles ?? []) as Profile[]}
-      />
-    </div>
-  );
+  return Response.json({ sessions: liveSessions, bookings: bookings ?? [], profiles: profiles ?? [], stations: stations ?? [], dogs: dogs ?? [] });
 }
