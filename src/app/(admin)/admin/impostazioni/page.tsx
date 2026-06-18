@@ -87,14 +87,14 @@ export default async function ImpostazioniPage() {
 
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-cyan-400">Catalogo Servizi Staff</h3>
-                <p className="text-xs text-slate-400">Configura i servizi che richiedono l'operatore (visibili se in modalità Ibrida o Solo Assistito).</p>
+                <p className="text-xs text-slate-400">Configura i servizi che richiedono l&apos;operatore (visibili se in modalità Ibrida o Solo Assistito).</p>
                 
                 {/* Servizio 1: Lavaggio Assistito */}
                 <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-slate-50">Lavaggio Assistito</p>
-                      <p className="text-[11px] text-slate-400">Il cliente aiuta l'operatore. Il cliente paga anche la vasca al minuto.</p>
+                      <p className="text-[11px] text-slate-400">Il cliente aiuta l&apos;operatore. Il cliente paga anche la vasca al minuto.</p>
                     </div>
                     <label className="relative inline-flex cursor-pointer items-center">
                       <input type="checkbox" name="enable_assisted_wash" defaultChecked={enableAssisted} className="peer sr-only" />
@@ -119,7 +119,7 @@ export default async function ImpostazioniPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-slate-50">Toelettatura Completa</p>
-                      <p className="text-[11px] text-slate-400">Il cliente lascia il cane (Drop-off). Include l'uso della vasca.</p>
+                      <p className="text-[11px] text-slate-400">Il cliente lascia il cane (Drop-off). Include l&apos;uso della vasca.</p>
                     </div>
                     <label className="relative inline-flex cursor-pointer items-center">
                       <input type="checkbox" name="enable_full_grooming" defaultChecked={enableFull} className="peer sr-only" />
