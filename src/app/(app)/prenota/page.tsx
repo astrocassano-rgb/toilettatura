@@ -120,6 +120,7 @@ export default function PrenotaPage() {
   const [availabilityLoaded, setAvailabilityLoaded] = useState(false);
   const [availabilityHint, setAvailabilityHint] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isTimeSlotsModalOpen, setIsTimeSlotsModalOpen] = useState(false);
   
   // Dati utente
   const [isLogged, setIsLogged] = useState(false);
@@ -443,20 +444,30 @@ export default function PrenotaPage() {
 
   const handleSelectDay = (key: string) => {
     setPreviewDayKey(key);
+    setIsTimeSlotsModalOpen(true);
   };
 
-  const { calendarYear, calendarMonth, offset, daysInMonth } = useMemo(() => {
-    const y = currentMonth.getFullYear();
-    const m = currentMonth.getMonth();
-    const tot = new Date(y, m + 1, 0).getDate();
-    const firstDay = new Date(y, m, 1).getDay();
-    const off = firstDay === 0 ? 6 : firstDay - 1;
+  const { calendarYear, calendarMonth } = useMemo(() => {
     return {
-      calendarYear: y,
-      calendarMonth: m,
-      offset: off,
-      daysInMonth: Array.from({ length: tot }, (_, i) => i + 1)
+      calendarYear: currentMonth.getFullYear(),
+      calendarMonth: currentMonth.getMonth()
     };
+  }, [currentMonth]);
+
+  const monthDays = useMemo(() => {
+    const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const startDay = start.getDay();
+    const diffToMonday = start.getDate() - startDay + (startDay === 0 ? -6 : 1);
+    const firstMonday = new Date(start.getTime());
+    firstMonday.setDate(diffToMonday);
+    
+    const days = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(firstMonday.getTime());
+      d.setDate(firstMonday.getDate() + i);
+      days.push(d);
+    }
+    return days;
   }, [currentMonth]);
 
   function toggleService(service: StationType) {
@@ -579,7 +590,7 @@ export default function PrenotaPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-md mx-auto pb-10">
+    <div className="space-y-6 pb-10">
       {/* Nasconde scrollbar — CSS puro, nessun dangerouslySetInnerHTML */}
       <style>{`
         .scrollbar-none::-webkit-scrollbar {
@@ -602,446 +613,587 @@ export default function PrenotaPage() {
         </p>
       </header>
 
-      {/* --- SELEZIONE CANE (Solo se loggato) --- */}
-      {isLogged && (
-        <Card className="backdrop-blur-xl bg-slate-900/40 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-3xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <p className="text-xs font-bold uppercase tracking-wider text-blue-400">1. Il tuo cane</p>
-              <p className="text-sm font-semibold text-slate-200">Per chi è la prenotazione?</p>
-            </div>
-            <Link href="/cani/nuovo">
-              <Button size="md" variant="ghost" className="h-8 rounded-xl bg-slate-950/40 border border-slate-800 hover:bg-slate-800/50 text-xs text-slate-300 gap-1 cursor-pointer">
-                <Plus className="h-3.5 w-3.5" /> Aggiungi
-              </Button>
-            </Link>
-          </div>
-
-          {dogs.length > 0 ? (
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {dogs.map((dog) => {
-                const active = dog.id === selectedDogId;
-                return (
-                  <button
-                    key={dog.id}
-                    type="button"
-                    onClick={() => setSelectedDogId(dog.id)}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-left shrink-0 transition-all duration-200 cursor-pointer",
-                      active
-                        ? "bg-blue-500/10 border-blue-500/40 text-blue-200 shadow-[0_0_12px_rgba(59,130,246,0.08)]"
-                        : "bg-slate-950/40 border-slate-800/60 text-slate-450 hover:bg-slate-900/40 hover:text-slate-200"
-                    )}
-                  >
-                    <PawPrint className={cn("h-4 w-4", active ? "text-blue-300 animate-pulse" : "text-slate-400")} />
-                    <div className="text-xs font-bold text-left">
-                      <p>{dog.name}</p>
-                      <p className="text-[9px] opacity-60 font-medium font-mono lowercase">
-                        {dog.size || "media"}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="p-3 text-center rounded-2xl bg-slate-950/40 border border-slate-800/80 text-xs text-slate-400">
-              Nessun cane registrato. <Link href="/cani/nuovo" className="text-blue-400 font-semibold underline">Aggiungine uno ora</Link> per iniziare.
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* --- INSERISCI LOGIN SE NON LOGGATO --- */}
-      {!isLogged && (
-        <Card className="backdrop-blur-xl bg-slate-900/20 border border-blue-500/10 rounded-3xl p-4 flex items-center justify-between gap-4">
-          <div className="space-y-0.5 max-w-[70%] text-left">
-            <p className="text-xs font-semibold text-blue-400">Non sei autenticato</p>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Puoi guardare gli orari liberi, ma per prenotare devi prima accedere al tuo account.
-            </p>
-          </div>
-          <Link href="/login?next=/prenota" className="shrink-0">
-            <Button size="md" variant="primary" className="rounded-xl bg-blue-600 hover:bg-blue-500 text-xs px-4">
-              Accedi
-            </Button>
-          </Link>
-        </Card>
-      )}
-
-      {/* --- STEP 2: MODALITÀ DI LAVAGGIO (Solo se loggato) --- */}
-      {isLogged && (
-        <Card className="backdrop-blur-xl bg-slate-900/40 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-3xl p-4 space-y-3">
-          <div className="space-y-0.5 text-left">
-            <p className="text-xs font-bold uppercase tracking-wider text-blue-400">2. Tipo Servizio</p>
-            <p className="text-sm font-semibold text-slate-200">Come desideri lavare il tuo cane?</p>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-1">
-            {/* Opzione Self-Service */}
-            {(!settings || settings.mode !== "ASSISTED_ONLY") && (
-              <button
-                type="button"
-                onClick={() => setServiceType("SELF_SERVICE")}
-                className={cn(
-                  "rounded-2xl p-4 text-left ring-1 ring-inset transition-all duration-200 cursor-pointer flex flex-col justify-between h-full min-h-[110px]",
-                  serviceType === "SELF_SERVICE"
-                    ? "bg-cyan-500/10 ring-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.08)]"
-                    : "bg-slate-950/40 ring-slate-800/80 hover:bg-slate-900/40"
-                )}
-              >
-                <div className="flex items-start justify-between w-full">
-                  <div className={cn(
-                    "rounded-xl p-2 ring-1 ring-inset transition-colors shrink-0",
-                    serviceType === "SELF_SERVICE" ? "bg-cyan-500/20 ring-cyan-400/30 text-cyan-200" : "bg-slate-900 ring-slate-850 text-slate-400"
-                  )}>
-                    <PawPrint className="h-4 w-4" />
+      <div className={cn(
+        "grid gap-6",
+        isLogged ? "grid-cols-1 md:grid-cols-12 md:items-start" : "grid-cols-1"
+      )}>
+        {isLogged ? (
+          <>
+            {/* Colonna Configurazione (Sinistra) */}
+            <div className="space-y-6 md:col-span-5">
+              {/* --- SELEZIONE CANE --- */}
+              <Card className="backdrop-blur-xl bg-slate-900/40 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-3xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-blue-400">1. Il tuo cane</p>
+                    <p className="text-sm font-semibold text-slate-200">Per chi è la prenotazione?</p>
                   </div>
-                  <div className={cn(
-                    "h-4 w-4 rounded-full border flex items-center justify-center transition-all",
-                    serviceType === "SELF_SERVICE" ? "bg-cyan-500 border-cyan-400" : "border-slate-700 bg-slate-950"
-                  )}>
-                    {serviceType === "SELF_SERVICE" && <Check className="h-2.5 w-2.5 text-white" />}
-                  </div>
+                  <Link href="/cani/nuovo">
+                    <Button size="md" variant="ghost" className="h-8 rounded-xl bg-slate-950/40 border border-slate-800 hover:bg-slate-800/50 text-xs text-slate-300 gap-1 cursor-pointer">
+                      <Plus className="h-3.5 w-3.5" /> Aggiungi
+                    </Button>
+                  </Link>
                 </div>
-                <div className="mt-3 text-left">
-                  <p className="text-xs font-bold text-slate-100">Self-Service H24</p>
-                  <p className="text-[10px] text-slate-450 mt-1 leading-normal">
-                    Lavi tu il tuo cane in autonomia usando le nostre attrezzature. Paga solo il tempo della vasca.
-                  </p>
-                </div>
-              </button>
-            )}
 
-            <div className="grid gap-2 sm:grid-cols-2">
-              {/* Opzione Assistito */}
-              {(!settings || settings.mode !== "SELF_ONLY") && settings?.enable_assisted_wash && (
-                <button
-                  type="button"
-                  onClick={() => setServiceType("ASSISTED_WASH")}
-                  className={cn(
-                    "rounded-2xl p-4 text-left ring-1 ring-inset transition-all duration-200 cursor-pointer flex flex-col justify-between h-full min-h-[110px]",
-                    serviceType === "ASSISTED_WASH"
-                      ? "bg-blue-500/10 ring-blue-500/30 shadow-[0_0_12px_rgba(59,130,246,0.08)]"
-                      : "bg-slate-950/40 ring-slate-800/80 hover:bg-slate-900/40"
-                  )}
-                >
-                  <div className="flex items-start justify-between w-full">
-                    <div className={cn(
-                      "rounded-xl p-2 ring-1 ring-inset transition-colors shrink-0",
-                      serviceType === "ASSISTED_WASH" ? "bg-blue-500/20 ring-blue-400/30 text-blue-200" : "bg-slate-900 ring-slate-850 text-slate-400"
-                    )}>
-                      <Sparkles className="h-4 w-4" />
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="rounded-full bg-blue-500/20 px-1.5 py-0.5 text-[8px] font-bold text-blue-350 ring-1 ring-inset ring-blue-500/30">
-                        +{settings.price_assisted_wash_credits} crediti
-                      </span>
-                      <div className={cn(
-                        "h-4 w-4 rounded-full border flex items-center justify-center transition-all",
-                        serviceType === "ASSISTED_WASH" ? "bg-blue-500 border-blue-400" : "border-slate-700 bg-slate-950"
-                      )}>
-                        {serviceType === "ASSISTED_WASH" && <Check className="h-2.5 w-2.5 text-white" />}
-                      </div>
-                    </div>
+                {dogs.length > 0 ? (
+                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    {dogs.map((dog) => {
+                      const active = dog.id === selectedDogId;
+                      return (
+                        <button
+                          key={dog.id}
+                          type="button"
+                          onClick={() => setSelectedDogId(dog.id)}
+                          className={cn(
+                            "flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-left shrink-0 transition-all duration-200 cursor-pointer",
+                            active
+                              ? "bg-blue-500/10 border-blue-500/40 text-blue-200 shadow-[0_0_12px_rgba(59,130,246,0.08)]"
+                              : "bg-slate-950/40 border-slate-800/60 text-slate-450 hover:bg-slate-900/40 hover:text-slate-200"
+                          )}
+                        >
+                          <PawPrint className={cn("h-4 w-4", active ? "text-blue-300 animate-pulse" : "text-slate-400")} />
+                          <div className="text-xs font-bold text-left">
+                            <p>{dog.name}</p>
+                            <p className="text-[9px] opacity-60 font-medium font-mono lowercase">
+                              {dog.size || "media"}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div className="mt-3 text-left">
-                    <p className="text-xs font-bold text-slate-100">Lavaggio Assistito</p>
-                    <p className="text-[10px] text-slate-450 mt-1 leading-normal">
-                      Ti aiutiamo a lavare e asciugare il cane.
-                    </p>
+                ) : (
+                  <div className="p-3 text-center rounded-2xl bg-slate-950/40 border border-slate-800/80 text-xs text-slate-400">
+                    Nessun cane registrato. <Link href="/cani/nuovo" className="text-blue-400 font-semibold underline">Aggiungine uno ora</Link> per iniziare.
                   </div>
-                </button>
-              )}
-
-              {/* Opzione Full Grooming */}
-              {(!settings || settings.mode !== "SELF_ONLY") && settings?.enable_full_grooming && (
-                <button
-                  type="button"
-                  onClick={() => setServiceType("FULL_GROOMING")}
-                  className={cn(
-                    "rounded-2xl p-4 text-left ring-1 ring-inset transition-all duration-200 cursor-pointer flex flex-col justify-between h-full min-h-[110px]",
-                    serviceType === "FULL_GROOMING"
-                      ? "bg-fuchsia-500/10 ring-fuchsia-500/30 shadow-[0_0_12px_rgba(217,70,239,0.08)]"
-                      : "bg-slate-950/40 ring-slate-800/80 hover:bg-slate-900/40"
-                  )}
-                >
-                  <div className="flex items-start justify-between w-full">
-                    <div className={cn(
-                      "rounded-xl p-2 ring-1 ring-inset transition-colors shrink-0",
-                      serviceType === "FULL_GROOMING" ? "bg-fuchsia-500/20 ring-fuchsia-400/30 text-fuchsia-200" : "bg-slate-900 ring-slate-850 text-slate-400"
-                    )}>
-                      <Sparkles className="h-4 w-4" />
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="rounded-full bg-fuchsia-500/20 px-1.5 py-0.5 text-[8px] font-bold text-fuchsia-350 ring-1 ring-inset ring-fuchsia-500/30">
-                        +{settings.price_full_grooming_credits} crediti
-                      </span>
-                      <div className={cn(
-                        "h-4 w-4 rounded-full border flex items-center justify-center transition-all",
-                        serviceType === "FULL_GROOMING" ? "bg-fuchsia-500 border-fuchsia-400" : "border-slate-700 bg-slate-950"
-                      )}>
-                        {serviceType === "FULL_GROOMING" && <Check className="h-2.5 w-2.5 text-white" />}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 text-left">
-                    <p className="text-xs font-bold text-slate-100">Toelettatura Completa</p>
-                    <p className="text-[10px] text-slate-450 mt-1 leading-normal">
-                      Lascio il cane (Drop-off). Penseremo a tutto noi.
-                    </p>
-                  </div>
-                </button>
-              )}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* --- SELEZIONE SERVIZI (Solo se loggato) --- */}
-      {isLogged && (
-        <Card className="backdrop-blur-xl bg-slate-900/40 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-3xl p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5 text-left">
-              <p className="text-xs font-bold uppercase tracking-wider text-blue-400">3. Servizi</p>
-              <p className="text-sm font-semibold text-slate-200">Scegli i trattamenti</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="md"
-              className="h-9 w-9 p-0 rounded-xl hover:bg-slate-800/50 cursor-pointer"
-              onClick={() => void loadAvailability()}
-              disabled={loading}
-              aria-label="Aggiorna disponibilità"
-            >
-              <RefreshCw className={cn("h-4 w-4 text-slate-300", loading && "animate-spin")} />
-            </Button>
-          </div>
-
-          <div className="grid gap-2">
-            {serviceOptions.map(({ value, label, subtitle, Icon }) => {
-              const selected = selectedServices.includes(value);
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => toggleService(value)}
-                  className={cn(
-                    "rounded-2xl p-3 text-left ring-1 ring-inset transition-all duration-200 cursor-pointer flex w-full items-center gap-3",
-                    selected
-                      ? "bg-blue-500/10 ring-blue-500/30 shadow-[0_0_12px_rgba(59,130,246,0.08)]"
-                      : "bg-slate-950/40 ring-slate-800/80 hover:bg-slate-900/40"
-                  )}
-                >
-                  <div className={cn(
-                    "rounded-xl p-2.5 ring-1 ring-inset transition-colors shrink-0",
-                    selected ? "bg-blue-500/20 ring-blue-400/30" : "bg-slate-900 ring-slate-850"
-                  )}>
-                    <Icon className={cn("h-4 w-4", selected ? "text-blue-200" : "text-slate-300")} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                       <p className="text-sm font-bold text-slate-100">{label}</p>
-                      {selected && (
-                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-semibold text-emerald-300 ring-1 ring-inset ring-emerald-500/20">
-                          Attivo
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-0.5 text-[11px] text-slate-400 line-clamp-1">{subtitle}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="rounded-2xl bg-slate-950/50 p-3 ring-1 ring-inset ring-slate-800/80 text-xs text-slate-400 space-y-1 text-left">
-            <p className="font-semibold text-slate-300">Tempo stimato per i servizi scelti:</p>
-            <p className="text-slate-300">
-              <span className="text-blue-400 font-bold">{durationMinutes} minuti</span> ({getServiceSummary(selectedServices)})
-            </p>
-          </div>
-        </Card>
-      )}
-
-      {/* --- SELEZIONE CALENDARIO --- */}
-      <Card className="backdrop-blur-xl bg-slate-900/40 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-3xl p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-400">
-            {isLogged ? "4. Data Prenotazione" : "Data Disponibilità"}
-          </p>
-          <p className="text-xs text-slate-400 font-semibold">{selectedPreviewDay?.label ?? "—"}</p>
-        </div>
-
-        <div className="rounded-2xl bg-slate-950/60 p-3 border border-slate-800/80 space-y-3">
-          <div className="flex items-center justify-between">
-            <Button
-              type="button"
-              variant="ghost"
-              size="md"
-              className="h-7 w-7 p-0 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-colors cursor-pointer"
-              onClick={handlePrevMonth}
-              disabled={currentMonth.getFullYear() === calendarStart.getFullYear() && currentMonth.getMonth() === calendarStart.getMonth()}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <p className="text-xs font-bold text-slate-200 capitalize tracking-wide">
-              {currentMonth.toLocaleDateString("it-IT", { month: "long", year: "numeric" })}
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="md"
-              className="h-7 w-7 p-0 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-colors cursor-pointer"
-              onClick={handleNextMonth}
-              disabled={
-                calendar[calendar.length - 1]
-                  ? currentMonth.getFullYear() === calendar[calendar.length - 1]!.getFullYear() &&
-                    currentMonth.getMonth() === calendar[calendar.length - 1]!.getMonth()
-                  : false
-              }
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            {WEEKDAYS.map((dayName) => (
-              <div key={dayName}>{dayName}</div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-center">
-            {Array.from({ length: offset }).map((_, idx) => (
-              <div key={`empty-${idx}`} className="h-8 w-8" />
-            ))}
-            {daysInMonth.map((d) => {
-              const cellDate = new Date(calendarYear, calendarMonth, d);
-              const cellKey = ymd(cellDate);
-              
-              const isBeforeStart = cellKey < ymd(calendarStart);
-              const isAfterEnd = cellKey > calendarEndKey;
-              const isAvailable = availableDaysSet.has(cellKey);
-              const isDisabled = isBeforeStart || isAfterEnd || !isAvailable;
-              const isSelected = cellKey === dayKey;
-              const isToday = cellKey === ymd(new Date());
-
-              return (
-                <button
-                  key={d}
-                  type="button"
-                  disabled={isDisabled}
-                  onClick={() => handleSelectDay(cellKey)}
-                  className={cn(
-                    "h-8 w-8 text-xs rounded-xl flex items-center justify-center mx-auto transition-all relative cursor-pointer",
-                    isSelected
-                      ? "bg-blue-600 text-slate-50 font-bold shadow-md shadow-blue-600/30 scale-105"
-                      : isToday && !isDisabled
-                      ? "border border-blue-500/30 text-blue-400 font-semibold hover:bg-slate-800/40"
-                      : !isDisabled
-                      ? "text-slate-200 hover:bg-slate-800/40"
-                      : "text-slate-650 opacity-20 pointer-events-none"
-                  )}
-                >
-                  <span className="relative flex flex-col items-center justify-center w-full h-full">
-                    <span className={cn(isSelected && "translate-y-[-2px]")}>{d}</span>
-                    {isAvailable && !isSelected && (
-                      <span className="absolute bottom-1 h-1 w-1 rounded-full bg-emerald-500" />
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </Card>
-
-      {/* --- GRIGLIA DEGLI ORARI --- */}
-      <Card className="backdrop-blur-xl bg-slate-900/40 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-3xl p-4 space-y-4">
-        <div className="space-y-1 text-left">
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-400">
-            {isLogged ? "5. Orari del giorno" : "Orari del giorno"}
-          </p>
-          <p className="text-sm font-semibold text-slate-200">Seleziona la fascia oraria di interesse:</p>
-        </div>
-
-        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950/60 border border-slate-800/80 rounded-2xl">
-          {[
-            { key: "night", label: "Notte", desc: "00-06" },
-            { key: "morning", label: "Mattina", desc: "06-12" },
-            { key: "afternoon", label: "Pome", desc: "12-18" },
-            { key: "evening", label: "Sera", desc: "18-24" }
-          ].map((fascia) => {
-            const active = selectedFascia === fascia.key;
-            return (
-              <button
-                key={fascia.key}
-                type="button"
-                onClick={() => setSelectedFascia(fascia.key as any)}
-                className={cn(
-                  "py-2 rounded-xl text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200",
-                  active
-                    ? "bg-blue-500/15 text-blue-200 ring-1 ring-inset ring-blue-500/30 shadow-[0_0_12px_rgba(59,130,246,0.1)]"
-                    : "text-slate-400 hover:text-slate-200"
                 )}
-              >
-                <span className="text-xs font-bold">{fascia.label}</span>
-                <span className="text-[9px] opacity-70 mt-0.5">{fascia.desc}</span>
-              </button>
-            );
-          })}
-        </div>
+              </Card>
 
-        <div className="pt-2">
-          {daySlotsInfo.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {daySlotsInfo.map((slot) => {
-                if (slot.isAvailable) {
-                  return (
+              {/* --- STEP 2: MODALITÀ DI LAVAGGIO --- */}
+              <Card className="backdrop-blur-xl bg-slate-900/40 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-3xl p-4 space-y-3">
+                <div className="space-y-0.5 text-left">
+                  <p className="text-xs font-bold uppercase tracking-wider text-blue-400">2. Tipo Servizio</p>
+                  <p className="text-sm font-semibold text-slate-200">Come desideri lavare il tuo cane?</p>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-1">
+                  {/* Opzione Self-Service */}
+                  {(!settings || settings.mode !== "ASSISTED_ONLY") && (
                     <button
-                      key={slot.time}
                       type="button"
-                      onClick={() => handleSlotClick(slot)}
-                      className="group block rounded-2xl p-3 text-center transition-all duration-200 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 ring-1 ring-inset ring-blue-500/20 hover:ring-blue-500/40 hover:from-blue-500/15 hover:to-cyan-500/10 cursor-pointer shadow-[0_4px_12px_rgba(59,130,246,0.05)] active:scale-98 text-left w-full"
+                      onClick={() => setServiceType("SELF_SERVICE")}
+                      className={cn(
+                        "rounded-2xl p-4 text-left ring-1 ring-inset transition-all duration-200 cursor-pointer flex flex-col justify-between h-full min-h-[110px]",
+                        serviceType === "SELF_SERVICE"
+                          ? "bg-cyan-500/10 ring-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.08)]"
+                          : "bg-slate-950/40 ring-slate-800/80 hover:bg-slate-900/40"
+                      )}
                     >
-                      <p className="text-sm font-bold text-slate-100 group-hover:text-blue-200 transition-colors text-center">
-                        {slot.time}
-                      </p>
-                      <p className="text-[10px] font-medium text-emerald-400 mt-1 text-center">
-                        Libero
-                      </p>
-                      <div className="mt-2 text-[9px] font-bold text-slate-100 uppercase tracking-wider bg-blue-600/30 rounded-lg py-1 px-2 ring-1 ring-inset ring-blue-400/30 text-center">
-                        Prenota
+                      <div className="flex items-start justify-between w-full">
+                        <div className={cn(
+                          "rounded-xl p-2 ring-1 ring-inset transition-colors shrink-0",
+                          serviceType === "SELF_SERVICE" ? "bg-cyan-500/20 ring-cyan-400/30 text-cyan-200" : "bg-slate-900 ring-slate-850 text-slate-400"
+                        )}>
+                          <PawPrint className="h-4 w-4" />
+                        </div>
+                        <div className={cn(
+                          "h-4 w-4 rounded-full border flex items-center justify-center transition-all",
+                          serviceType === "SELF_SERVICE" ? "bg-cyan-500 border-cyan-400" : "border-slate-700 bg-slate-950"
+                        )}>
+                          {serviceType === "SELF_SERVICE" && <Check className="h-2.5 w-2.5 text-white" />}
+                        </div>
+                      </div>
+                      <div className="mt-3 text-left">
+                        <p className="text-xs font-bold text-slate-100">Self-Service H24</p>
+                        <p className="text-[10px] text-slate-450 mt-1 leading-normal">
+                          Lavi tu il tuo cane in autonomia usando le nostre attrezzature. Paga solo il tempo della vasca.
+                        </p>
                       </div>
                     </button>
-                  );
-                } else {
-                  return (
-                    <div
-                      key={slot.time}
-                      className="rounded-2xl p-3 text-center bg-slate-950/40 ring-1 ring-inset ring-slate-900/60 opacity-40 select-none flex flex-col justify-between h-full min-h-[96px]"
+                  )}
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {/* Opzione Assistito */}
+                    {(!settings || settings.mode !== "SELF_ONLY") && settings?.enable_assisted_wash && (
+                      <button
+                        type="button"
+                        onClick={() => setServiceType("ASSISTED_WASH")}
+                        className={cn(
+                          "rounded-2xl p-4 text-left ring-1 ring-inset transition-all duration-200 cursor-pointer flex flex-col justify-between h-full min-h-[110px]",
+                          serviceType === "ASSISTED_WASH"
+                            ? "bg-blue-500/10 ring-blue-500/30 shadow-[0_0_12px_rgba(59,130,246,0.08)]"
+                            : "bg-slate-950/40 ring-slate-800/80 hover:bg-slate-900/40"
+                        )}
+                      >
+                        <div className="flex items-start justify-between w-full">
+                          <div className={cn(
+                            "rounded-xl p-2 ring-1 ring-inset transition-colors shrink-0",
+                            serviceType === "ASSISTED_WASH" ? "bg-blue-500/20 ring-blue-400/30 text-blue-200" : "bg-slate-900 ring-slate-850 text-slate-400"
+                          )}>
+                            <Sparkles className="h-4 w-4" />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="rounded-full bg-blue-500/20 px-1.5 py-0.5 text-[8px] font-bold text-blue-350 ring-1 ring-inset ring-blue-500/30">
+                              +{settings.price_assisted_wash_credits} crediti
+                            </span>
+                            <div className={cn(
+                              "h-4 w-4 rounded-full border flex items-center justify-center transition-all",
+                              serviceType === "ASSISTED_WASH" ? "bg-blue-500 border-blue-400" : "border-slate-700 bg-slate-950"
+                            )}>
+                              {serviceType === "ASSISTED_WASH" && <Check className="h-2.5 w-2.5 text-white" />}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-3 text-left">
+                          <p className="text-xs font-bold text-slate-100">Lavaggio Assistito</p>
+                          <p className="text-[10px] text-slate-450 mt-1 leading-normal">
+                            Ti aiutiamo a lavare e asciugare il cane.
+                          </p>
+                        </div>
+                      </button>
+                    )}
+
+                    {/* Opzione Full Grooming */}
+                    {(!settings || settings.mode !== "SELF_ONLY") && settings?.enable_full_grooming && (
+                      <button
+                        type="button"
+                        onClick={() => setServiceType("FULL_GROOMING")}
+                        className={cn(
+                          "rounded-2xl p-4 text-left ring-1 ring-inset transition-all duration-200 cursor-pointer flex flex-col justify-between h-full min-h-[110px]",
+                          serviceType === "FULL_GROOMING"
+                            ? "bg-fuchsia-500/10 ring-fuchsia-500/30 shadow-[0_0_12px_rgba(217,70,239,0.08)]"
+                            : "bg-slate-950/40 ring-slate-800/80 hover:bg-slate-900/40"
+                        )}
+                      >
+                        <div className="flex items-start justify-between w-full">
+                          <div className={cn(
+                            "rounded-xl p-2 ring-1 ring-inset transition-colors shrink-0",
+                            serviceType === "FULL_GROOMING" ? "bg-fuchsia-500/20 ring-fuchsia-400/30 text-fuchsia-200" : "bg-slate-900 ring-slate-850 text-slate-400"
+                          )}>
+                            <Sparkles className="h-4 w-4" />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="rounded-full bg-fuchsia-500/20 px-1.5 py-0.5 text-[8px] font-bold text-fuchsia-350 ring-1 ring-inset ring-fuchsia-500/30">
+                              +{settings.price_full_grooming_credits} crediti
+                            </span>
+                            <div className={cn(
+                              "h-4 w-4 rounded-full border flex items-center justify-center transition-all",
+                              serviceType === "FULL_GROOMING" ? "bg-fuchsia-500 border-fuchsia-400" : "border-slate-700 bg-slate-950"
+                            )}>
+                              {serviceType === "FULL_GROOMING" && <Check className="h-2.5 w-2.5 text-white" />}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-3 text-left">
+                          <p className="text-xs font-bold text-slate-100">Toelettatura Completa</p>
+                          <p className="text-[10px] text-slate-455 mt-1 leading-normal">
+                            Lascio il cane (Drop-off). Penseremo a tutto noi.
+                          </p>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+
+              {/* --- STEP 3: SELEZIONE SERVIZI --- */}
+              <Card className="backdrop-blur-xl bg-slate-900/40 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-3xl p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5 text-left">
+                    <p className="text-xs font-bold uppercase tracking-wider text-blue-400">3. Servizi</p>
+                    <p className="text-sm font-semibold text-slate-200">Scegli i trattamenti</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    className="h-9 w-9 p-0 rounded-xl hover:bg-slate-800/50 cursor-pointer"
+                    onClick={() => void loadAvailability()}
+                    disabled={loading}
+                    aria-label="Aggiorna disponibilità"
+                  >
+                    <RefreshCw className={cn("h-4 w-4 text-slate-300", loading && "animate-spin")} />
+                  </Button>
+                </div>
+
+                <div className="grid gap-2">
+                  {serviceOptions.map(({ value, label, subtitle, Icon }) => {
+                    const selected = selectedServices.includes(value);
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => toggleService(value)}
+                        className={cn(
+                          "rounded-2xl p-3 text-left ring-1 ring-inset transition-all duration-200 cursor-pointer flex w-full items-center gap-3",
+                          selected
+                            ? "bg-blue-500/10 ring-blue-500/30 shadow-[0_0_12px_rgba(59,130,246,0.08)]"
+                            : "bg-slate-950/40 ring-slate-800/80 hover:bg-slate-900/40"
+                        )}
+                      >
+                        <div className={cn(
+                          "rounded-xl p-2.5 ring-1 ring-inset transition-colors shrink-0",
+                          selected ? "bg-blue-500/20 ring-blue-400/30" : "bg-slate-900 ring-slate-850"
+                        )}>
+                          <Icon className={cn("h-4 w-4", selected ? "text-blue-200" : "text-slate-300")} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                             <p className="text-sm font-bold text-slate-100">{label}</p>
+                            {selected && (
+                              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-semibold text-emerald-300 ring-1 ring-inset ring-emerald-500/20">
+                                Attivo
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-slate-400 line-clamp-1">{subtitle}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="rounded-2xl bg-slate-950/50 p-3 ring-1 ring-inset ring-slate-800/80 text-xs text-slate-400 space-y-1 text-left">
+                  <p className="font-semibold text-slate-300">Tempo stimato per i servizi scelti:</p>
+                  <p className="text-slate-300">
+                    <span className="text-blue-400 font-bold">{durationMinutes} minuti</span> ({getServiceSummary(selectedServices)})
+                  </p>
+                </div>
+              </Card>
+            </div>
+
+            {/* Colonna Calendario (Destra) */}
+            <div className="md:col-span-7">
+              {/* --- STEP 4: SELEZIONE CALENDARIO --- */}
+              <Card className="backdrop-blur-xl bg-slate-900/40 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-3xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wider text-blue-400">4. Data Prenotazione</p>
+                  <p className="text-xs text-slate-400 font-semibold">{selectedPreviewDay?.label ?? "—"}</p>
+                </div>
+
+                <div className="rounded-2xl bg-slate-950/60 p-3 border border-slate-800/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="md"
+                      className="h-7 w-7 p-0 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-colors cursor-pointer"
+                      onClick={handlePrevMonth}
+                      disabled={currentMonth.getFullYear() === calendarStart.getFullYear() && currentMonth.getMonth() === calendarStart.getMonth()}
                     >
-                      <p className="text-sm font-bold text-slate-500 line-through">
-                        {slot.time}
-                      </p>
-                      <p className="text-[10px] font-semibold text-slate-400 mt-1">
-                        {slot.isPast ? "Passato" : "Occupato"}
-                      </p>
-                      <div className="mt-2 text-[9px] font-bold text-slate-500 uppercase tracking-wider bg-slate-900 border border-slate-800 rounded-lg py-1 px-2">
-                        Non disp.
-                      </div>
-                    </div>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <p className="text-xs font-bold text-slate-200 capitalize tracking-wide">
+                      {currentMonth.toLocaleDateString("it-IT", { month: "long", year: "numeric" })}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="md"
+                      className="h-7 w-7 p-0 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-colors cursor-pointer"
+                      onClick={handleNextMonth}
+                      disabled={
+                        calendar[calendar.length - 1]
+                          ? currentMonth.getFullYear() === calendar[calendar.length - 1]!.getFullYear() &&
+                            currentMonth.getMonth() === calendar[calendar.length - 1]!.getMonth()
+                          : false
+                      }
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    {WEEKDAYS.map((dayName) => (
+                      <div key={dayName}>{dayName}</div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5 text-center">
+                    {monthDays.map((day, idx) => {
+                      const cellKey = ymd(day);
+                      const isCurrentMonth = day.getMonth() === currentMonth.getMonth() && day.getFullYear() === currentMonth.getFullYear();
+                      const isBeforeStart = cellKey < ymd(calendarStart);
+                      const isAfterEnd = cellKey > calendarEndKey;
+                      const isAvailable = availableDaysSet.has(cellKey);
+                      const isDisabled = isBeforeStart || isAfterEnd || !isAvailable;
+                      const isSelected = cellKey === dayKey;
+                      const isToday = cellKey === ymd(new Date());
+
+                      const dayWindow = weekTimeWindows.find((w) => w.key === cellKey);
+                      const availableSlotsCount = dayWindow?.ranges.length ?? 0;
+
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          disabled={isDisabled}
+                          onClick={() => handleSelectDay(cellKey)}
+                          className={cn(
+                            "aspect-square w-full text-xs rounded-2xl flex flex-col items-center justify-between p-1.5 transition-all relative cursor-pointer border",
+                            isSelected
+                              ? "bg-blue-600/20 border-blue-500 text-slate-50 font-bold shadow-[0_0_15px_rgba(59,130,246,0.15)] scale-105"
+                              : isToday && !isDisabled
+                              ? "bg-slate-900 border-cyan-500/40 text-cyan-400 font-bold hover:bg-slate-850"
+                              : !isDisabled
+                              ? cn(
+                                  "bg-slate-950/40 border-slate-800/80 text-slate-200 hover:bg-slate-900 hover:border-slate-700",
+                                  !isCurrentMonth && "opacity-30"
+                                )
+                              : cn(
+                                  "bg-slate-950/10 border-slate-900/40 text-slate-700 pointer-events-none",
+                                  isCurrentMonth ? "opacity-20" : "opacity-5"
+                                )
+                          )}
+                        >
+                          <span className="text-[11px] font-black">{day.getDate()}</span>
+                          {availableSlotsCount > 0 && !isDisabled && (
+                            <span className="text-[8px] font-extrabold text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20 scale-90 tracking-tighter max-w-full truncate">
+                              {availableSlotsCount} liberi
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </>
+        ) : (
+          /* Utente non loggato: Calendario Disponibilità centrato */
+          <div className="max-w-3xl mx-auto w-full space-y-6">
+            {/* --- INSERISCI LOGIN SE NON LOGGATO --- */}
+            <Card className="backdrop-blur-xl bg-slate-900/20 border border-blue-500/10 rounded-3xl p-4 flex items-center justify-between gap-4">
+              <div className="space-y-0.5 max-w-[75%] text-left">
+                <p className="text-xs font-semibold text-blue-400">Non sei autenticato</p>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Puoi guardare gli orari liberi, ma per prenotare devi prima accedere al tuo account.
+                </p>
+              </div>
+              <Link href="/login?next=/prenota" className="shrink-0">
+                <Button size="md" variant="primary" className="rounded-xl bg-blue-600 hover:bg-blue-500 text-xs px-4">
+                  Accedi
+                </Button>
+              </Link>
+            </Card>
+
+            {/* --- CALENDARIO DISPONIBILITÀ --- */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-3xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-blue-400">Data Disponibilità</p>
+                <p className="text-xs text-slate-400 font-semibold">{selectedPreviewDay?.label ?? "—"}</p>
+              </div>
+
+              <div className="rounded-2xl bg-slate-950/60 p-3 border border-slate-800/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="md"
+                    className="h-7 w-7 p-0 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-colors cursor-pointer"
+                    onClick={handlePrevMonth}
+                    disabled={currentMonth.getFullYear() === calendarStart.getFullYear() && currentMonth.getMonth() === calendarStart.getMonth()}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <p className="text-xs font-bold text-slate-200 capitalize tracking-wide">
+                    {currentMonth.toLocaleDateString("it-IT", { month: "long", year: "numeric" })}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="md"
+                    className="h-7 w-7 p-0 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-colors cursor-pointer"
+                    onClick={handleNextMonth}
+                    disabled={
+                      calendar[calendar.length - 1]
+                        ? currentMonth.getFullYear() === calendar[calendar.length - 1]!.getFullYear() &&
+                          currentMonth.getMonth() === calendar[calendar.length - 1]!.getMonth()
+                        : false
+                    }
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  {WEEKDAYS.map((dayName) => (
+                    <div key={dayName}>{dayName}</div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-1.5 text-center">
+                  {monthDays.map((day, idx) => {
+                    const cellKey = ymd(day);
+                    const isCurrentMonth = day.getMonth() === currentMonth.getMonth() && day.getFullYear() === currentMonth.getFullYear();
+                    const isBeforeStart = cellKey < ymd(calendarStart);
+                    const isAfterEnd = cellKey > calendarEndKey;
+                    const isAvailable = availableDaysSet.has(cellKey);
+                    const isDisabled = isBeforeStart || isAfterEnd || !isAvailable;
+                    const isSelected = cellKey === dayKey;
+                    const isToday = cellKey === ymd(new Date());
+
+                    const dayWindow = weekTimeWindows.find((w) => w.key === cellKey);
+                    const availableSlotsCount = dayWindow?.ranges.length ?? 0;
+
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => handleSelectDay(cellKey)}
+                        className={cn(
+                          "aspect-square w-full text-xs rounded-2xl flex flex-col items-center justify-between p-1.5 transition-all relative cursor-pointer border",
+                          isSelected
+                            ? "bg-blue-600/20 border-blue-500 text-slate-50 font-bold shadow-[0_0_15px_rgba(59,130,246,0.15)] scale-105"
+                            : isToday && !isDisabled
+                            ? "bg-slate-900 border-cyan-500/40 text-cyan-400 font-bold hover:bg-slate-850"
+                            : !isDisabled
+                            ? cn(
+                                "bg-slate-950/40 border-slate-800/80 text-slate-200 hover:bg-slate-900 hover:border-slate-700",
+                                !isCurrentMonth && "opacity-30"
+                              )
+                            : cn(
+                                "bg-slate-950/10 border-slate-900/40 text-slate-700 pointer-events-none",
+                                isCurrentMonth ? "opacity-20" : "opacity-5"
+                              )
+                        )}
+                      >
+                        <span className="text-[11px] font-black">{day.getDate()}</span>
+                        {availableSlotsCount > 0 && !isDisabled && (
+                          <span className="text-[8px] font-extrabold text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20 scale-90 tracking-tighter max-w-full truncate">
+                            {availableSlotsCount} liberi
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
+
+      {/* --- MODALE SELEZIONE ORARI (Framer Motion) --- */}
+      <AnimatePresence>
+        {isTimeSlotsModalOpen && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+            {/* Overlay Sfondo con Blur */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
+              onClick={() => setIsTimeSlotsModalOpen(false)}
+            />
+
+            {/* Box della Modale */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              className="relative w-full max-w-sm rounded-3xl bg-slate-900/90 border border-slate-800/80 p-5 shadow-2xl backdrop-blur-2xl z-10 space-y-4 max-h-[85vh] overflow-y-auto scrollbar-none"
+            >
+              {/* Tasto Chiudi */}
+              <button
+                type="button"
+                onClick={() => setIsTimeSlotsModalOpen(false)}
+                className="absolute top-4 right-4 rounded-xl p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="space-y-1 text-left">
+                <p className="text-xs font-bold uppercase tracking-wider text-blue-400">Orari del giorno</p>
+                <h3 className="text-sm font-bold text-slate-100 capitalize">
+                  {selectedPreviewDay?.label ?? "Seleziona orario"}
+                </h3>
+              </div>
+
+              {/* Fasce orarie tabs */}
+              <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950/60 border border-slate-800/80 rounded-2xl">
+                {[
+                  { key: "night", label: "Notte", desc: "00-06" },
+                  { key: "morning", label: "Mattina", desc: "06-12" },
+                  { key: "afternoon", label: "Pome", desc: "12-18" },
+                  { key: "evening", label: "Sera", desc: "18-24" }
+                ].map((fascia) => {
+                  const active = selectedFascia === fascia.key;
+                  return (
+                    <button
+                      key={fascia.key}
+                      type="button"
+                      onClick={() => setSelectedFascia(fascia.key as any)}
+                      className={cn(
+                        "py-1.5 rounded-xl text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200",
+                        active
+                          ? "bg-blue-500/15 text-blue-200 ring-1 ring-inset ring-blue-500/30 shadow-[0_0_12px_rgba(59,130,246,0.1)]"
+                          : "text-slate-400 hover:text-slate-200"
+                      )}
+                    >
+                      <span className="text-[11px] font-bold">{fascia.label}</span>
+                      <span className="text-[8px] opacity-70 mt-0.5">{fascia.desc}</span>
+                    </button>
                   );
-                }
-              })}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-slate-400 text-sm">
-              Caricamento slot orari...
-            </div>
-          )}
-        </div>
-      </Card>
+                })}
+              </div>
+
+              {/* Griglia slot */}
+              <div className="pt-1">
+                {daySlotsInfo.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {daySlotsInfo.map((slot) => {
+                      if (slot.isAvailable) {
+                        return (
+                          <button
+                            key={slot.time}
+                            type="button"
+                            onClick={() => {
+                              setIsTimeSlotsModalOpen(false);
+                              handleSlotClick(slot);
+                            }}
+                            className="group block rounded-2xl p-2.5 text-center transition-all duration-200 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 ring-1 ring-inset ring-blue-500/20 hover:ring-blue-500/40 hover:from-blue-500/15 hover:to-cyan-500/10 cursor-pointer shadow-[0_4px_12px_rgba(59,130,246,0.05)] active:scale-98 text-left w-full"
+                          >
+                            <p className="text-xs font-bold text-slate-100 group-hover:text-blue-200 transition-colors text-center">
+                              {slot.time}
+                            </p>
+                            <p className="text-[9px] font-semibold text-emerald-400 mt-0.5 text-center">
+                              Libero
+                            </p>
+                            <div className="mt-1.5 text-[8px] font-bold text-slate-100 uppercase tracking-wider bg-blue-600/30 rounded-lg py-0.5 px-2 ring-1 ring-inset ring-blue-400/30 text-center">
+                              Prenota
+                            </div>
+                          </button>
+                        );
+                      } else {
+                        return (
+                          <div
+                            key={slot.time}
+                            className="rounded-2xl p-2.5 text-center bg-slate-950/40 ring-1 ring-inset ring-slate-900/60 opacity-40 select-none flex flex-col justify-between h-full min-h-[70px]"
+                          >
+                            <p className="text-xs font-bold text-slate-500 line-through">
+                              {slot.time}
+                            </p>
+                            <p className="text-[9px] font-semibold text-slate-400 mt-0.5">
+                              {slot.isPast ? "Passato" : "Occupato"}
+                            </p>
+                          </div>
+                        );
+                      }
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-slate-400 text-sm">
+                    Caricamento slot orari...
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* --- GESTIONE DEI MESSAGGI GENERALI DI ERRORE --- */}
       {availabilityHint && (

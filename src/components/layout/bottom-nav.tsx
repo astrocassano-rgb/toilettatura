@@ -60,7 +60,8 @@ export function BottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-800 bg-slate-950/90 backdrop-blur">
       <div className={cn(
-        "mx-auto grid max-w-md px-2 pb-[calc(env(safe-area-inset-bottom))] pt-2",
+        "mx-auto grid px-2 pb-[calc(env(safe-area-inset-bottom))] pt-2 transition-all duration-300",
+        pathname === "/prenota" ? "max-w-4xl" : "max-w-md",
         isLogged ? "grid-cols-5" : "grid-cols-3"
       )}>
         {items.map(({ href, label, Icon }) => {
