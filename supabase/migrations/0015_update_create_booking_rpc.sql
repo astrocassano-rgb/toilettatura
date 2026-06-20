@@ -26,6 +26,8 @@ declare
   v_operator_cost numeric := 0;
   v_total_credits numeric;
   v_station_status public.station_status;
+  v_created_booking_id uuid;
+  v_created_status public.booking_status;
   
   -- system settings
   v_enable_assisted boolean;
@@ -107,8 +109,12 @@ begin
 
   insert into public.bookings (customer_id, dog_id, station_id, start_time, end_time, status, total_credits, service_type, operator_cost_credits)
   values (v_user_id, p_dog_id, p_station_id, p_start_time, p_end_time, 'CONFIRMED', v_total_credits, p_service_type, v_operator_cost)
-  returning id, total_credits, status
-  into booking_id, total_credits, status;
+  returning public.bookings.id, public.bookings.status
+  into v_created_booking_id, v_created_status;
+
+  booking_id := v_created_booking_id;
+  total_credits := v_total_credits;
+  status := v_created_status;
 
   insert into public.token_transactions (wallet_id, type, amount_credits, amount_currency, stripe_intent_id, note)
   values (
