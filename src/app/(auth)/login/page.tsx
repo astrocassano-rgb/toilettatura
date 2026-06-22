@@ -59,6 +59,8 @@ function LoginContent() {
   const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [canResend, setCanResend] = useState(false);
@@ -192,6 +194,10 @@ function LoginContent() {
   };
 
   const validate = () => {
+    if (mode === "signup") {
+      if (!firstName.trim()) return "Inserisci il tuo nome.";
+      if (!lastName.trim()) return "Inserisci il tuo cognome.";
+    }
     if (!email || !password) return "Inserisci email e password.";
     if (password.length < 6) return "La password deve avere almeno 6 caratteri.";
     return null;
@@ -229,13 +235,23 @@ function LoginContent() {
       const emailRedirectTo = buildAuthCallbackUrl(nextPath);
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo } });
       if (error) throw error;
+
+      // Salva nome e cognome nel profilo appena creato (best-effort)
+      if (data.user) {
+        await supabase.from("profiles").upsert({
+          id: data.user.id,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+        });
+      }
+
       if (data.session) {
         const redirected = await maybeRequireProfileCompletion(data.session.user as any);
         if (redirected) return;
 
         router.replace(resolvePostLoginPath(nextPath, data.session.user as any) as Route);
       } else {
-        setMessage("Account creato. Controlla la email e conferma la registrazione, poi torna qui e accedi.");
+        setMessage("Account creato! Controlla la email e conferma la registrazione, poi torna qui e accedi.");
         setCanResend(true);
       }
     } catch (e: any) {
@@ -380,6 +396,36 @@ function LoginContent() {
               void (mode === "signup" ? signUp() : signIn());
             }}
           >
+            {/* ── Campi solo per Crea account ── */}
+            {mode === "signup" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">Nome <span className="text-red-400">*</span></Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="Mario"
+                    autoComplete="given-name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    disabled={!isConfigured || loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Cognome <span className="text-red-400">*</span></Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Rossi"
+                    autoComplete="family-name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    disabled={!isConfigured || loading}
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -403,6 +449,9 @@ function LoginContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={!isConfigured || loading}
               />
+              {mode === "signup" && (
+                <p className="text-xs text-slate-500">Minimo 6 caratteri</p>
+              )}
             </div>
 
             <Button className="w-full" variant="primary" type="submit" disabled={!isConfigured || loading}>
