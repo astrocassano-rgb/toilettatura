@@ -3,8 +3,7 @@
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function sendBookingConfirmationWhatsApp(
   userId: string, 
@@ -15,18 +14,28 @@ export async function sendBookingConfirmationWhatsApp(
     serviceLabel: string;
   }
 ) {
+  // Uscita silenziosa se mancano i dati necessari
   if (!userId) return;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!; // Uso chiave server
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  try {
+    // Usa il client server autenticato (non richiede SUPABASE_SERVICE_ROLE_KEY)
+    const supabase = await createSupabaseServerClient();
 
-  const { data: profile } = await supabase.from("profiles").select("phone").eq("id", userId).maybeSingle();
-  if (!profile || !profile.phone) return;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("phone")
+      .eq("id", userId)
+      .maybeSingle();
 
-  const dateStr = format(new Date(details.startTime), "EEEE d MMMM 'alle' HH:mm", { locale: it });
+    if (!profile?.phone) return;
 
-  const message = `🐾 *DogWash24 - Prenotazione Confermata!*\n\nCiao! Ti confermiamo l'appuntamento per *${details.dogName}*.\n\n🗓️ Quando: ${dateStr}\n📍 Postazione: ${details.stationName}\n✂️ Servizio: ${details.serviceLabel}\n\nTi aspettiamo!`;
+    const dateStr = format(new Date(details.startTime), "EEEE d MMMM 'alle' HH:mm", { locale: it });
 
-  await sendWhatsAppMessage({ to: profile.phone, message });
+    const message = `🐾 *DogWash24 - Prenotazione Confermata!*\n\nCiao! Ti confermiamo l'appuntamento per *${details.dogName}*.\n\n🗓️ Quando: ${dateStr}\n📍 Postazione: ${details.stationName}\n✂️ Servizio: ${details.serviceLabel}\n\nTi aspettiamo!`;
+
+    await sendWhatsAppMessage({ to: profile.phone, message });
+  } catch (err) {
+    // Non-critico: la prenotazione è già confermata, la notifica WhatsApp è best-effort
+    console.warn("[sendBookingConfirmationWhatsApp] Errore non bloccante:", err);
+  }
 }
