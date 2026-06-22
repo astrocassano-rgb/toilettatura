@@ -335,35 +335,36 @@ function LoginContent() {
             </div>
           ) : null}
 
-          <div className="grid grid-cols-2 gap-2">
-            <Button
+          {/* ── Tab switcher: stile tab (non button pieno) per non confondersi col pulsante submit ── */}
+          <div className="flex rounded-xl bg-slate-800/60 p-1 gap-1">
+            <button
               type="button"
-              variant={mode === "signin" ? "primary" : "secondary"}
-              className="w-full"
-              onClick={() => {
-                setMode("signin");
-                setMessage(null);
-                setCanResend(false);
-              }}
+              onClick={() => { setMode("signin"); setMessage(null); setCanResend(false); }}
               disabled={!isConfigured || loading}
+              className={[
+                "flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                mode === "signin"
+                  ? "bg-slate-950 text-slate-100 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200",
+              ].join(" ")}
             >
-              <LogIn className="h-5 w-5" />
+              <LogIn className="h-4 w-4 shrink-0" />
               Accedi
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              variant={mode === "signup" ? "primary" : "secondary"}
-              className="w-full"
-              onClick={() => {
-                setMode("signup");
-                setMessage(null);
-                setCanResend(false);
-              }}
+              onClick={() => { setMode("signup"); setMessage(null); setCanResend(false); }}
               disabled={!isConfigured || loading}
+              className={[
+                "flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                mode === "signup"
+                  ? "bg-slate-950 text-slate-100 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200",
+              ].join(" ")}
             >
-              <UserPlus className="h-5 w-5" />
+              <UserPlus className="h-4 w-4 shrink-0" />
               Crea account
-            </Button>
+            </button>
           </div>
 
           {message ? (
@@ -417,13 +418,19 @@ function LoginContent() {
                 Reinvia email di conferma
               </Button>
             ) : null}
-            <Button className="w-full" variant="secondary" type="button" onClick={() => void requestPasswordReset()} disabled={!isConfigured || loading}>
-              <Mail className="h-5 w-5" />
-              Recupera password
-            </Button>
+
+            {/* ── Recupera password: solo in modalità login ── */}
+            {mode === "signin" ? (
+              <Button className="w-full" variant="secondary" type="button" onClick={() => void requestPasswordReset()} disabled={!isConfigured || loading}>
+                <Mail className="h-5 w-5" />
+                Recupera password
+              </Button>
+            ) : null}
+
+            {/* ── OAuth: sempre disponibile (crea account o accedi) ── */}
             <Button className="w-full" variant="secondary" type="button" onClick={() => void signInWithOAuth("google")} disabled={!isConfigured || loading}>
               <span className="text-base font-semibold">G</span>
-              Continua con Google
+              {mode === "signup" ? "Registrati con Google" : "Continua con Google"}
             </Button>
           </div>
         </CardContent>
