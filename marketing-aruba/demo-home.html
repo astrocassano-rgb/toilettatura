@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <title>Demo Cliente — PawSpa Milano | Powered by DogWash24</title>
+    <meta name="description" content="Scopri come un cliente che usa DogWash24 può presentare i propri servizi di toelettatura e prenotazione online. Questa è una pagina demo di esempio." />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="./favicon-cropped.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      /* ── DESIGN TOKENS (identici al sito principale) ─────── */
+      :root {
+        --bg:         #020617;
+        --bg2:        #0a1628;
+        --card:       rgba(10, 22, 40, 0.6);
+        --card2:      rgba(10, 22, 40, 0.4);
+        --border:     rgba(148, 163, 184, 0.14);
+        --border2:    rgba(148, 163, 184, 0.08);
+        --text:       #e2e8f0;
+        --muted:      rgba(226, 232, 240, 0.72);
+        --muted2:     rgba(226, 232, 240, 0.48);
+        --cyan:       #06b6d4;
+        --teal:       #14b8a6;
+        --emerald:    #10b981;
+        --violet:     #8b5cf6;
+        --violet-dim: rgba(139, 92, 246, 0.15);
+        --amber:      #f59e0b;
+        --amber-dim:  rgba(245, 158, 11, 0.12);
+        --radius:     24px;
+        --radius-sm:  14px;
+        --font: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      }
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background-image:
+          radial-gradient(900px 700px at 10% 0%,   rgba(139,92,246,0.10), transparent 60%),
+          radial-gradient(700px 500px at 90% 20%,  rgba(6,182,212,0.08), transparent 55%),
+          radial-gradient(700px 500px at 0%  90%,  rgba(16,185,129,0.07), transparent 55%);
+      }
+      a { color: inherit; text-decoration: none; }
+      img { display: block; max-width: 100%; }
+
+      /* ── CONTAINER ──────────────────────────────────────── */
+      .container    { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+      .container-sm { max-width: 680px;  margin: 0 auto; padding: 0 20px; }
+
+      /* ── GLASS ──────────────────────────────────────────── */
+      .glass {
+        background: var(--card);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--border);
+      }
+
+      /* ── GRADIENT TEXT ──────────────────────────────────── */
+      .text-gradient {
+        background: linear-gradient(135deg, var(--violet), var(--cyan));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      /* ── FADE-UP ────────────────────────────────────────── */
+      .fade-up { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+      .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+      /* ── BUTTON ─────────────────────────────────────────── */
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        height: 44px; padding: 0 20px;
+        border-radius: var(--radius-sm);
+        font-weight: 600; font-size: 14px; cursor: pointer;
+        border: 1px solid var(--border);
+        background: var(--card2); color: var(--text);
+        transition: all 0.2s ease;
+      }
+      .btn:hover { border-color: var(--violet); transform: translateY(-1px); }
+      .btn-primary {
+        background: linear-gradient(135deg, var(--violet), #7c3aed);
+        border-color: transparent; color: #fff; font-weight: 700;
+      }
+      .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(139,92,246,0.35); }
+      .btn-lg { height: 52px; padding: 0 28px; font-size: 15px; border-radius: 16px; }
+
+      /* ── CARD ───────────────────────────────────────────── */
+      .card {
+        border-radius: var(--radius); border: 1px solid var(--border);
+        background: var(--card); overflow: hidden;
+        transition: all 0.3s ease;
+      }
+      .card:hover { transform: translateY(-3px); border-color: rgba(139,92,246,0.25); }
+
+      /* ══════════════════════════════════════════════════════
+         BANNER DEMO
+         ══════════════════════════════════════════════════════ */
+      #demo-banner {
+        background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(6,182,212,0.08));
+        border-bottom: 1px solid rgba(139,92,246,0.2);
+        padding: 10px 20px; text-align: center; font-size: 12px;
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        flex-wrap: wrap;
+      }
+      #demo-banner .demo-dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--violet); flex-shrink: 0;
+        animation: pulse-dot 2s ease-in-out infinite;
+      }
+      @keyframes pulse-dot {
+        0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+      }
+      #demo-banner a { color: var(--cyan); font-weight: 600; }
+      #demo-banner a:hover { text-decoration: underline; }
+
+      /* ══════════════════════════════════════════════════════
+         HEADER CLIENTE
+         ══════════════════════════════════════════════════════ */
+      #client-header {
+        position: sticky; top: 0; z-index: 100;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+        background: rgba(2,6,23,0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
+      .client-header-inner {
+        display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      }
+      .client-brand { display: flex; align-items: center; gap: 10px; }
+      .client-logo {
+        width: 38px; height: 38px; border-radius: 12px;
+        background: linear-gradient(135deg, var(--violet), #7c3aed);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px; box-shadow: 0 4px 14px rgba(139,92,246,0.3);
+      }
+      .client-name  { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+      .client-sub   { font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted2); }
+      .client-nav   { display: flex; gap: 4px; }
+      .client-nav a {
+        padding: 7px 12px; border-radius: 10px; font-size: 13px; font-weight: 500;
+        color: var(--muted); transition: all 0.2s;
+      }
+      .client-nav a:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+      @media (max-width: 700px) { .client-nav { display: none; } }
+
+      /* ══════════════════════════════════════════════════════
+         HERO CLIENTE
+         ══════════════════════════════════════════════════════ */
+      #client-hero { padding: 72px 0 64px; position: relative; overflow: hidden; }
+      .rating-pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        border-radius: 999px; border: 1px solid rgba(245,158,11,0.25);
+        background: rgba(245,158,11,0.08); padding: 5px 12px;
+        font-size: 12px; font-weight: 600; color: var(--amber);
+        margin-bottom: 20px;
+      }
+      #client-hero h1 {
+        font-size: clamp(30px, 5vw, 52px); font-weight: 900;
+        letter-spacing: -0.04em; line-height: 1.08; margin-bottom: 18px;
+      }
+      #client-hero p.lead {
+        font-size: 16px; color: var(--muted); max-width: 500px;
+        line-height: 1.65; margin-bottom: 28px;
+      }
+      .hero-ctas   { display: flex; gap: 12px; flex-wrap: wrap; }
+      .quick-info  {
+        display: flex; flex-wrap: wrap; gap: 16px;
+        margin-top: 28px; padding-top: 20px;
+        border-top: 1px solid var(--border2);
+      }
+      .quick-item  { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+      .quick-icon  { font-size: 14px; }
+
+      /* ══════════════════════════════════════════════════════
+         SERVIZI
+         ══════════════════════════════════════════════════════ */
+      #servizi { padding: 80px 0; }
+      .kicker {
+        display: inline-block; font-size: 11px; font-weight: 700;
+        letter-spacing: 0.12em; text-transform: uppercase;
+        color: var(--violet); margin-bottom: 10px;
+      }
+      .section-title {
+        font-size: clamp(22px, 3.5vw, 34px); font-weight: 800;
+        letter-spacing: -0.03em; margin-bottom: 40px;
+      }
+      .servizi-grid { display: grid; gap: 14px; }
+      @media (min-width: 640px) { .servizi-grid { grid-template-columns: repeat(2, 1fr); } }
+      .servizio-card {
+        border-radius: var(--radius); border: 1px solid var(--border);
+        background: var(--card2); padding: 22px; position: relative; overflow: hidden;
+        transition: all 0.3s ease;
+      }
+      .servizio-card::before {
+        content: ''; position: absolute; inset: 0; opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .servizio-card.violet::before { background: linear-gradient(135deg, rgba(139,92,246,0.07), transparent); }
+      .servizio-card.cyan::before   { background: linear-gradient(135deg, rgba(6,182,212,0.07), transparent); }
+      .servizio-card.emerald::before{ background: linear-gradient(135deg, rgba(16,185,129,0.07), transparent); }
+      .servizio-card.amber::before  { background: linear-gradient(135deg, rgba(245,158,11,0.07), transparent); }
+      .servizio-card:hover::before  { opacity: 1; }
+      .servizio-card:hover { transform: translateY(-3px); border-color: rgba(139,92,246,0.2); }
+
+      .servizio-icon {
+        width: 48px; height: 48px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; margin-bottom: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      }
+      .icon-violet { background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.05)); border: 1px solid rgba(139,92,246,0.3); }
+      .icon-cyan   { background: linear-gradient(135deg, rgba(6,182,212,0.25), rgba(6,182,212,0.05));   border: 1px solid rgba(6,182,212,0.3); }
+      .icon-emerald{ background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(16,185,129,0.05)); border: 1px solid rgba(16,185,129,0.3); }
+      .icon-amber  { background: linear-gradient(135deg, rgba(245,158,11,0.25), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.3); }
+
+      .servizio-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+      .servizio-name  { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+      .servizio-price { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; }
+      .servizio-desc  { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+      .servizio-meta  { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted2); }
+
+      /* ══════════════════════════════════════════════════════
+         COME PRENOTARE
+         ══════════════════════════════════════════════════════ */
+      #prenota-steps { padding: 80px 0; background: rgba(139,92,246,0.02); }
+      .steps-list {
+        border-radius: var(--radius); border: 1px solid var(--border);
+        background: var(--card2); overflow: hidden;
+      }
+      .step-row {
+        display: flex; align-items: flex-start; gap: 16px;
+        padding: 20px 24px; border-bottom: 1px solid var(--border2);
+        transition: background 0.15s;
+      }
+      .step-row:last-child { border-bottom: none; }
+      .step-row:hover { background: rgba(139,92,246,0.03); }
+      .step-num {
+        width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+        background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; font-weight: 800; color: #a78bfa; margin-top: 2px;
+      }
+      .step-content { flex: 1; }
+      .step-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+      .step-desc  { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+      .booking-cta-box {
+        margin-top: 24px; border-radius: var(--radius);
+        border: 1px solid rgba(139,92,246,0.25);
+        background: linear-gradient(135deg, rgba(139,92,246,0.10), var(--card2));
+        padding: 32px; text-align: center;
+      }
+      .booking-cta-box h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+      .booking-cta-box p  { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+
+      /* ══════════════════════════════════════════════════════
+         RECENSIONI
+         ══════════════════════════════════════════════════════ */
+      #recensioni { padding: 80px 0; }
+      .recensioni-grid { display: grid; gap: 14px; }
+      @media (min-width: 700px) { .recensioni-grid { grid-template-columns: repeat(3, 1fr); } }
+      .recensione-card {
+        border-radius: var(--radius); border: 1px solid var(--border);
+        background: var(--card2); padding: 22px; position: relative;
+        transition: all 0.3s;
+      }
+      .recensione-card:hover { border-color: rgba(139,92,246,0.2); transform: translateY(-2px); }
+      .recensione-stars { display: flex; gap: 3px; margin-bottom: 12px; color: var(--amber); font-size: 13px; }
+      .recensione-testo { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; font-style: italic; }
+      .recensione-autore { font-size: 13px; font-weight: 700; }
+      .quote-mark { position: absolute; top: 14px; right: 16px; font-size: 36px; color: rgba(139,92,246,0.08); line-height: 1; }
+
+      /* ══════════════════════════════════════════════════════
+         CTA FINALE
+         ══════════════════════════════════════════════════════ */
+      #cta-finale {
+        padding: 80px 0;
+        background: rgba(139,92,246,0.02);
+        border-top: 1px solid var(--border2);
+      }
+      .cta-box-client {
+        border-radius: 32px; border: 1px solid rgba(139,92,246,0.25);
+        background: linear-gradient(135deg, rgba(139,92,246,0.10), var(--card));
+        padding: 52px 40px; text-align: center; position: relative; overflow: hidden;
+      }
+      @media (max-width: 600px) { .cta-box-client { padding: 36px 20px; } }
+      .cta-box-client h2 { font-size: clamp(24px, 4vw, 36px); font-weight: 900; letter-spacing: -0.03em; margin-bottom: 12px; }
+      .cta-box-client p  { font-size: 15px; color: var(--muted); margin-bottom: 24px; max-width: 480px; margin-left: auto; margin-right: auto; }
+      .cta-blob {
+        position: absolute; border-radius: 50%; pointer-events: none; filter: blur(60px);
+      }
+
+      /* ══════════════════════════════════════════════════════
+         FOOTER CLIENTE
+         ══════════════════════════════════════════════════════ */
+      #client-footer {
+        border-top: 1px solid var(--border);
+        background: rgba(10,22,40,0.5);
+        padding: 36px 0 24px;
+      }
+      .footer-inner {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 12px; text-align: center;
+      }
+      .footer-info { font-size: 12px; color: var(--muted2); line-height: 1.7; }
+      .powered-by {
+        display: flex; align-items: center; gap: 8px;
+        padding: 8px 16px; border-radius: 999px;
+        border: 1px solid var(--border); background: var(--card2);
+        font-size: 11px; color: var(--muted2);
+      }
+      .powered-by img { height: 18px; width: auto; opacity: 0.7; }
+      .powered-by:hover img { opacity: 1; }
+      .back-to-main { font-size: 11px; color: var(--muted2); }
+      .back-to-main a { color: var(--cyan); font-weight: 600; }
+      .back-to-main a:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+
+    <!-- ══ BANNER DEMO ══════════════════════════════════════ -->
+    <div id="demo-banner">
+      <span class="demo-dot"></span>
+      <span>Questa è una <strong>pagina demo</strong> — mostra come potrebbe apparire il sito di un cliente che usa DogWash24.</span>
+      <a href="./index.html">← Torna al sito DogWash24</a>
+    </div>
+
+    <!-- ══ HEADER CLIENTE ════════════════════════════════════ -->
+    <header id="client-header">
+      <div class="container">
+        <div class="client-header-inner">
+          <div class="client-brand">
+            <div class="client-logo">🐾</div>
+            <div>
+              <div class="client-name">PawSpa Milano</div>
+              <div class="client-sub">Toelettatura professionale</div>
+            </div>
+          </div>
+          <nav class="client-nav">
+            <a href="#servizi">Servizi</a>
+            <a href="#prenota-steps">Come prenotare</a>
+            <a href="#recensioni">Recensioni</a>
+          </nav>
+          <a href="https://toilettatura.vercel.app" class="btn btn-primary">
+            Prenota ora →
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- ══ HERO ══════════════════════════════════════════════ -->
+    <section id="client-hero">
+      <div style="position:absolute;top:-40px;left:10%;width:600px;height:400px;background:rgba(139,92,246,0.12);border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;"></div>
+      <div class="container">
+        <div style="max-width: 620px; position:relative; z-index:1;" class="fade-up">
+          <div class="rating-pill">
+            ★★★★★ &nbsp;4.9 · 142 recensioni verificate
+          </div>
+          <h1>La cura del tuo cane,<br><span class="text-gradient">sempre al centro</span></h1>
+          <p class="lead">
+            Prenota online in pochi secondi o usa le nostre postazioni
+            self-service disponibili <strong>H24</strong>. La tecnologia di prenotazione
+            è fornita da <strong>DogWash24</strong>.
+          </p>
+          <div class="hero-ctas">
+            <a href="https://toilettatura.vercel.app" class="btn btn-primary btn-lg">
+              Prenota ora
+              <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+            <a href="tel:+39021234567" class="btn btn-lg">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .9h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91A16 16 0 0015.09 17.9l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+              02 1234567
+            </a>
+          </div>
+          <div class="quick-info">
+            <span class="quick-item"><span class="quick-icon">📍</span> Via Brera 12, Milano</span>
+            <span class="quick-item"><span class="quick-icon">⏰</span> Lun–Sab · 9:00–19:00</span>
+            <span class="quick-item"><span class="quick-icon">🔓</span> Self-Service H24</span>
+            <span class="quick-item"><span class="quick-icon">💳</span> Pagamento in app</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ SERVIZI ════════════════════════════════════════════ -->
+    <section id="servizi">
+      <div class="container">
+        <div class="fade-up">
+          <div class="kicker">I nostri servizi</div>
+          <div class="section-title">Cosa offriamo</div>
+        </div>
+        <div class="servizi-grid">
+
+          <div class="servizio-card violet fade-up">
+            <div class="servizio-icon icon-violet">✂️</div>
+            <div class="servizio-header">
+              <div class="servizio-name">Toelettatura Completa</div>
+              <div class="servizio-price">Da 45 €</div>
+            </div>
+            <p class="servizio-desc">Bagno, asciugatura, taglio pelo e unghie. Include profumo e foulard di cortesia.</p>
+            <div class="servizio-meta">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              90 min &nbsp;·&nbsp; Con operatore
+            </div>
+          </div>
+
+          <div class="servizio-card cyan fade-up">
+            <div class="servizio-icon icon-cyan">🚿</div>
+            <div class="servizio-header">
+              <div class="servizio-name">Self-Service H24</div>
+              <div class="servizio-price">Da 10 €</div>
+            </div>
+            <p class="servizio-desc">Postazione self-service disponibile 24 ore su 24. Accesso e pagamento tramite app DogWash24.</p>
+            <div class="servizio-meta">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              30–60 min &nbsp;·&nbsp; Autonomo
+            </div>
+          </div>
+
+          <div class="servizio-card emerald fade-up">
+            <div class="servizio-icon icon-emerald">🐾</div>
+            <div class="servizio-header">
+              <div class="servizio-name">Lavaggio Assistito</div>
+              <div class="servizio-price">Da 25 €</div>
+            </div>
+            <p class="servizio-desc">Bagno e asciugatura con assistenza professionale. Ideale per taglie grandi o cani con esigenze particolari.</p>
+            <div class="servizio-meta">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              45 min &nbsp;·&nbsp; Con operatore
+            </div>
+          </div>
+
+          <div class="servizio-card amber fade-up">
+            <div class="servizio-icon icon-amber">✨</div>
+            <div class="servizio-header">
+              <div class="servizio-name">SPA Premium</div>
+              <div class="servizio-price">Da 65 €</div>
+            </div>
+            <p class="servizio-desc">Trattamento idratante, massaggio rilassante e pacchetto aromaterapia. Un'esperienza di lusso per il tuo cane.</p>
+            <div class="servizio-meta">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              120 min &nbsp;·&nbsp; Con operatore
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ COME PRENOTARE ═════════════════════════════════════ -->
+    <section id="prenota-steps">
+      <div class="container-sm">
+        <div class="fade-up" style="text-align:center; margin-bottom:40px;">
+          <div class="kicker">Processo di prenotazione</div>
+          <div class="section-title">Prenota in 3 passi</div>
+        </div>
+        <div class="steps-list fade-up">
+          <div class="step-row">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Scarica l'app o prenota da qui</div>
+              <div class="step-desc">Usa DogWash24 da smartphone o direttamente da questo sito. Registrazione gratuita, nessuna carta richiesta.</div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Scegli il servizio e lo slot</div>
+              <div class="step-desc">Vedi la disponibilità in tempo reale e prenota in pochi secondi. Ricevi conferma immediata via email.</div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Arriva e goditi il servizio</div>
+              <div class="step-desc">Ricevi una notifica il giorno prima. Per il self-service, accedi con QR-code dall'app. Paga direttamente con il wallet.</div>
+            </div>
+          </div>
+        </div>
+        <div class="booking-cta-box fade-up">
+          <h3>Pronto a prenotare?</h3>
+          <p>Disponibilità in tempo reale. Conferma immediata. Pagamento sicuro.</p>
+          <a href="https://toilettatura.vercel.app" class="btn btn-primary btn-lg">
+            Prenota ora — è gratis
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ RECENSIONI ═════════════════════════════════════════ -->
+    <section id="recensioni">
+      <div class="container">
+        <div class="fade-up" style="margin-bottom:40px;">
+          <div class="kicker">Cosa dicono i clienti</div>
+          <div class="section-title">142 recensioni, media 4.9 ★</div>
+        </div>
+        <div class="recensioni-grid">
+
+          <div class="recensione-card fade-up">
+            <div class="quote-mark">"</div>
+            <div class="recensione-stars">★★★★★</div>
+            <p class="recensione-testo">Fantastico! Il mio Golden Retriever esce sempre bellissimo. Prenotare con l'app DogWash24 è semplicissimo e velocissimo.</p>
+            <div class="recensione-autore">Giulia M. — Milano</div>
+          </div>
+
+          <div class="recensione-card fade-up">
+            <div class="quote-mark">"</div>
+            <div class="recensione-stars">★★★★★</div>
+            <p class="recensione-testo">La postazione self-service è perfetta per chi ha orari difficili. Ci vado anche la domenica sera, tutto funziona alla grande!</p>
+            <div class="recensione-autore">Marco T. — Sesto S.G.</div>
+          </div>
+
+          <div class="recensione-card fade-up">
+            <div class="quote-mark">"</div>
+            <div class="recensione-stars">★★★★★</div>
+            <p class="recensione-testo">Staff professionale e gentile. L'app per prenotare è intuitiva e veloce. Il mio Labrador non vede l'ora di venire!</p>
+            <div class="recensione-autore">Sara B. — Monza</div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ CTA FINALE ══════════════════════════════════════════ -->
+    <section id="cta-finale">
+      <div class="container-sm">
+        <div class="cta-box-client fade-up">
+          <div class="cta-blob" style="top:-60px;left:-60px;width:200px;height:200px;background:rgba(139,92,246,0.12);"></div>
+          <div class="cta-blob" style="bottom:-40px;right:-40px;width:160px;height:160px;background:rgba(6,182,212,0.08);"></div>
+          <div style="font-size:48px; margin-bottom:16px;">🐶</div>
+          <h2>Porta il tuo cane da noi!</h2>
+          <p>Prenota online in 60 secondi. Disponibilità immediata, conferma istantanea, nessuna attesa al telefono.</p>
+          <a href="https://toilettatura.vercel.app" class="btn btn-primary btn-lg">
+            Prenota online ora
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <div style="margin-top:16px; font-size:12px; color:var(--muted2);">
+            📍 Via Brera 12, Milano &nbsp;·&nbsp; ☎ 02 1234567 &nbsp;·&nbsp; Lun–Sab 9:00–19:00
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ FOOTER ═════════════════════════════════════════════ -->
+    <footer id="client-footer">
+      <div class="container">
+        <div class="footer-inner">
+          <div class="footer-info">
+            PawSpa Milano · Via Brera 12, 20121 Milano · P.IVA 00000000000 (dati fittizi — pagina demo)<br>
+            Tutti i diritti riservati © 2025 · <a href="./privacy.html" style="color:var(--cyan);">Privacy</a>
+          </div>
+          <a href="./index.html" class="powered-by">
+            <span>Prenotazioni gestite da</span>
+            <img src="./logo.png" alt="DogWash24" />
+          </a>
+          <div class="back-to-main">
+            Questa è una pagina demo — <a href="./index.html">Scopri la piattaforma DogWash24</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Fade-up on scroll
+      const observer = new IntersectionObserver(
+        (entries) => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+        { threshold: 0.1 }
+      );
+      document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+    </script>
+  </body>
+</html>

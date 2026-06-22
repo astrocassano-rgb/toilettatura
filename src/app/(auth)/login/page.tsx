@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { tryCreateSupabaseBrowserClient } from "@/lib/supabase/optional";
-import { LogIn, Mail, UserPlus, ArrowLeft } from "lucide-react";
+import { LogIn, Mail, UserPlus, ArrowLeft, Home, CalendarDays } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -298,7 +299,24 @@ function LoginContent() {
   };
 
   return (
-    <div className="mx-auto max-w-md px-4 py-10">
+    <div className="mx-auto max-w-md px-4 py-10 pb-28">
+      {/* ── Logo ufficiale ──────────────────────────────── */}
+      <div className="mb-8 flex flex-col items-center gap-2">
+        <Link href="/" aria-label="Torna alla Home">
+          <div className="mx-auto w-44 max-w-full">
+            <Image
+              src="/logo.png"
+              alt="DogWash24 - Self Service Toilettatura"
+              width={440}
+              height={440}
+              priority
+              className="h-auto w-full"
+            />
+          </div>
+        </Link>
+        <p className="text-xs text-slate-500 tracking-wide">La piattaforma per la toilettatura H24</p>
+      </div>
+
       <div className="mb-6">
         <Link href="/" className="inline-flex items-center text-sm font-medium text-slate-400 hover:text-slate-100 transition-colors">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -410,6 +428,34 @@ function LoginContent() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Mini Bottom Nav (identica alla BottomNav principale) ── */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-800 bg-slate-950/90 backdrop-blur">
+        <div className="mx-auto grid max-w-md grid-cols-3 px-2 pb-[calc(env(safe-area-inset-bottom))] pt-2">
+          <Link
+            href="/"
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] leading-none text-slate-300 hover:text-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
+          >
+            <Home className="h-5 w-5 text-slate-300" aria-hidden="true" />
+            <span className="truncate">Home</span>
+          </Link>
+          <Link
+            href={"/prenota" as Route}
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] leading-none text-slate-300 hover:text-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
+          >
+            <CalendarDays className="h-5 w-5 text-slate-300" aria-hidden="true" />
+            <span className="truncate">Disponibilità</span>
+          </Link>
+          <Link
+            href={"/login" as Route}
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] leading-none text-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
+            aria-current="page"
+          >
+            <LogIn className="h-5 w-5 text-blue-300" aria-hidden="true" />
+            <span className="truncate">Accedi</span>
+          </Link>
+        </div>
+      </nav>
     </div>
   );
 }

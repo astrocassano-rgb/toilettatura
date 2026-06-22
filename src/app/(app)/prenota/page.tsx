@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -601,6 +602,22 @@ export default function PrenotaPage() {
           scrollbar-width: none;
         }
       `}</style>
+
+      {/* ── Logo ────────────────────────────────────── */}
+      <div className="flex justify-center">
+        <Link href="/" aria-label="Torna alla Home">
+          <div className="mx-auto w-44 max-w-full">
+            <Image
+              src="/logo.png"
+              alt="DogWash24 - Self Service Toilettatura"
+              width={440}
+              height={440}
+              priority
+              className="h-auto w-full"
+            />
+          </div>
+        </Link>
+      </div>
 
       <header className="space-y-2 text-center">
         <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">

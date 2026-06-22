@@ -36,6 +36,12 @@ $remotePrivacyFile = "ftp://$ftpHost/$ftpDir/privacy.html"
 Write-Host "Uploading privacy.html..."
 $webclient.UploadFile($remotePrivacyFile, $localPrivacyFile)
 
+# Upload demo-home.html
+$localDemoFile = "C:\Users\info\Documents\cane\Toilettatura\marketing-aruba\demo-home.html"
+$remoteDemoFile = "ftp://$ftpHost/$ftpDir/demo-home.html"
+Write-Host "Uploading demo-home.html..."
+$webclient.UploadFile($remoteDemoFile, $localDemoFile)
+
 
 # Create immagini_sito
 $dirUri = "ftp://$ftpHost/$ftpDir/immagini_sito/"
