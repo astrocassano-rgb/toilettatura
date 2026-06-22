@@ -21,13 +21,15 @@ export async function sendBookingConfirmationWhatsApp(
     // Usa il client server autenticato (non richiede SUPABASE_SERVICE_ROLE_KEY)
     const supabase = await createSupabaseServerClient();
 
-    const { data: profile } = await supabase
+    const { data: profileRaw } = await supabase
       .from("profiles")
       .select("phone")
       .eq("id", userId)
       .maybeSingle();
 
+    const profile = profileRaw as { phone: string | null } | null;
     if (!profile?.phone) return;
+
 
     const dateStr = format(new Date(details.startTime), "EEEE d MMMM 'alle' HH:mm", { locale: it });
 
