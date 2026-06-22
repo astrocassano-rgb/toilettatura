@@ -62,7 +62,9 @@ export function BottomNav() {
       <div className={cn(
         "mx-auto grid px-2 pb-[calc(env(safe-area-inset-bottom))] pt-2 transition-all duration-300",
         pathname === "/prenota" ? "max-w-4xl" : "max-w-md",
-        `grid-cols-${items.length}`
+        items.length === 5 ? "grid-cols-5" :
+        items.length === 4 ? "grid-cols-4" :
+        items.length === 3 ? "grid-cols-3" : "grid-cols-2"
       )}>
         {items.map(({ href, label, Icon }) => {
           const isActive = pathname === href || (href === "/login" && pathname?.startsWith("/login"));
