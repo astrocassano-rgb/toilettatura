@@ -82,7 +82,8 @@ function LoginContent() {
   const maybeRequireProfileCompletion = useCallback(
     async (user: any) => {
       if (!supabase) return false;
-      if (user?.app_metadata?.role === "admin") return false;
+      const role = user?.app_metadata?.role;
+      if (role === "admin" || role === "superadmin") return false;
 
       const { data: profile, error } = await supabase
         .from("profiles")
@@ -226,6 +227,7 @@ function LoginContent() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+
       const redirected = await maybeRequireProfileCompletion(data.user as any);
       if (redirected) return;
 

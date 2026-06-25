@@ -9,7 +9,13 @@ export default async function HomePage() {
     data: { user }
   } = await supabase.auth.getUser();
 
-  if ((user as any)?.app_metadata?.role === "admin") {
+  const role = (user as any)?.app_metadata?.role;
+
+  if (role === "superadmin") {
+    redirect("/superadmin" as Route);
+  }
+
+  if (role === "admin") {
     redirect("/admin" as Route);
   }
 
