@@ -19,7 +19,10 @@ type AuthMode = "signin" | "signup";
 
 function resolvePostLoginPath(nextPath: string, user: { app_metadata?: { role?: string } } | null | undefined) {
   if (nextPath !== "/") return nextPath;
-  return user?.app_metadata?.role === "admin" ? "/admin" : "/";
+  const role = user?.app_metadata?.role;
+  if (role === "superadmin") return "/superadmin";
+  if (role === "admin") return "/admin";
+  return "/";
 }
 
 function isProfileComplete(profile: { first_name: string | null; last_name: string | null; phone: string | null } | null | undefined) {
