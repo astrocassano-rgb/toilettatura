@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
   const { data: booking } = await admin
     .from("bookings")
-    .select("id, customer_id, station_id, start_time, end_time, status")
+    .select("id, customer_id, station_id, start_time, end_time, status, tenant_id")
     .eq("id", payload.booking_id)
     .maybeSingle();
   const bookingRecord = booking as BookingSessionActivationRecord | null;

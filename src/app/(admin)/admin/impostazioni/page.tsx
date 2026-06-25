@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function ImpostazioniPage() {
-  const { supabase } = await requireAdmin();
+  const { supabase, tenantId } = await requireAdmin();
 
-  const { data } = await supabase.from("system_settings").select("*").eq("id", 1).maybeSingle();
+  const { data } = await supabase.from("system_settings").select("*").eq("tenant_id", tenantId).maybeSingle();
   const settings = data as any; // bypass "never" type inference issue
 
   const mode = settings?.mode || "HYBRID";

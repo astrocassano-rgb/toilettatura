@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { revalidatePath } from "next/cache";
 
 export async function updateSystemSettings(formData: FormData) {
-  const { supabase } = await requireAdmin();
+  const { supabase, tenantId } = await requireAdmin();
 
   const mode = formData.get("mode") as "SELF_ONLY" | "ASSISTED_ONLY" | "HYBRID";
   const max_concurrent = parseInt(formData.get("max_concurrent_assisted") as string, 10);
@@ -20,15 +20,16 @@ export async function updateSystemSettings(formData: FormData) {
   }
 
   const { error } = await (supabase.from("system_settings") as any)
-    .update({
+    .upsert({
+      tenant_id: tenantId,
       mode,
       max_concurrent_assisted: max_concurrent,
       enable_assisted_wash: enable_assisted,
       price_assisted_wash_credits: price_assisted,
       enable_full_grooming: enable_full,
       price_full_grooming_credits: price_full,
-    } as any)
-    .eq("id", 1);
+      updated_at: new Date().toISOString(),
+    });
 
   if (error) {
     throw new Error("Errore durante il salvataggio: " + error.message);

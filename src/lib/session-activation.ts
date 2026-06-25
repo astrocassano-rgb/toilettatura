@@ -5,7 +5,7 @@ import type { Database } from "@/types/database";
 
 export type BookingSessionActivationRecord = Pick<
   Database["public"]["Tables"]["bookings"]["Row"],
-  "id" | "customer_id" | "station_id" | "start_time" | "end_time" | "status"
+  "id" | "customer_id" | "station_id" | "start_time" | "end_time" | "status" | "tenant_id"
 >;
 
 function isAllowedStatus(status: string) {
@@ -61,6 +61,7 @@ export async function startOrGetBookingSession(booking: BookingSessionActivation
       booking_id: booking.id,
       station_id: booking.station_id,
       customer_id: booking.customer_id,
+      tenant_id: booking.tenant_id,
       remaining_seconds: remainingSeconds,
       is_paused: false,
       activated_at: new Date(nowMs).toISOString()

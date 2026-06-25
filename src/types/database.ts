@@ -12,6 +12,36 @@ export type Database = {
       booking_service_type: "SELF_SERVICE" | "ASSISTED_WASH" | "FULL_GROOMING";
     };
     Tables: {
+      tenants: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          plan: string;
+          settings: Json;
+          subscription_ends_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          slug: string;
+          plan?: string;
+          settings?: Json;
+          subscription_ends_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          slug?: string;
+          plan?: string;
+          settings?: Json;
+          subscription_ends_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
@@ -20,6 +50,7 @@ export type Database = {
           phone: string | null;
           email: string | null;
           avatar_url: string | null;
+          tenant_id: string;
           created_at: string;
         };
         Insert: {
@@ -29,6 +60,7 @@ export type Database = {
           phone?: string | null;
           email?: string | null;
           avatar_url?: string | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Update: {
@@ -37,6 +69,7 @@ export type Database = {
           phone?: string | null;
           email?: string | null;
           avatar_url?: string | null;
+          tenant_id?: string;
         };
         Relationships: [];
       };
@@ -50,6 +83,7 @@ export type Database = {
           weight: number | null;
           notes: string | null;
           photo_url: string | null;
+          tenant_id: string;
           created_at: string;
         };
         Insert: {
@@ -61,6 +95,7 @@ export type Database = {
           weight?: number | null;
           notes?: string | null;
           photo_url?: string | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Update: {
@@ -72,6 +107,7 @@ export type Database = {
           weight?: number | null;
           notes?: string | null;
           photo_url?: string | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -88,6 +124,7 @@ export type Database = {
           layout_w: number;
           layout_h: number;
           layout_zone: string;
+          tenant_id: string;
           created_at: string;
         };
         Insert: {
@@ -101,6 +138,7 @@ export type Database = {
           layout_w?: number;
           layout_h?: number;
           layout_zone?: string;
+          tenant_id?: string;
           created_at?: string;
         };
         Update: {
@@ -114,6 +152,7 @@ export type Database = {
           layout_w?: number;
           layout_h?: number;
           layout_zone?: string;
+          tenant_id?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -130,6 +169,7 @@ export type Database = {
           total_credits: number;
           service_type: Database["public"]["Enums"]["booking_service_type"];
           operator_cost_credits: number;
+          tenant_id: string;
           created_at: string;
         };
         Insert: {
@@ -143,6 +183,7 @@ export type Database = {
           total_credits: number;
           service_type?: Database["public"]["Enums"]["booking_service_type"];
           operator_cost_credits?: number;
+          tenant_id?: string;
           created_at?: string;
         };
         Update: {
@@ -156,6 +197,7 @@ export type Database = {
           total_credits?: number;
           service_type?: Database["public"]["Enums"]["booking_service_type"];
           operator_cost_credits?: number;
+          tenant_id?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -165,16 +207,19 @@ export type Database = {
           id: string;
           customer_id: string;
           balance_credits: number;
+          tenant_id: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           customer_id: string;
           balance_credits?: number;
+          tenant_id?: string;
           updated_at?: string;
         };
         Update: {
           balance_credits?: number;
+          tenant_id?: string;
           updated_at?: string;
         };
         Relationships: [];
@@ -188,6 +233,7 @@ export type Database = {
           amount_currency: number;
           stripe_intent_id: string | null;
           note: string | null;
+          tenant_id: string;
           created_at: string;
         };
         Insert: {
@@ -198,6 +244,7 @@ export type Database = {
           amount_currency: number;
           stripe_intent_id?: string | null;
           note?: string | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Update: {
@@ -206,6 +253,7 @@ export type Database = {
           amount_currency?: number;
           stripe_intent_id?: string | null;
           note?: string | null;
+          tenant_id?: string;
         };
         Relationships: [];
       };
@@ -217,6 +265,7 @@ export type Database = {
           customer_id: string;
           remaining_seconds: number;
           is_paused: boolean;
+          tenant_id: string;
           activated_at: string;
         };
         Insert: {
@@ -226,12 +275,14 @@ export type Database = {
           customer_id: string;
           remaining_seconds: number;
           is_paused?: boolean;
+          tenant_id?: string;
           activated_at?: string;
         };
         Update: {
           booking_id?: string | null;
           remaining_seconds?: number;
           is_paused?: boolean;
+          tenant_id?: string;
           activated_at?: string;
         };
         Relationships: [];
@@ -244,6 +295,7 @@ export type Database = {
           max_uses: number | null;
           current_uses: number;
           expires_at: string | null;
+          tenant_id: string;
           created_at: string;
         };
         Insert: {
@@ -253,6 +305,7 @@ export type Database = {
           max_uses?: number | null;
           current_uses?: number;
           expires_at?: string | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Update: {
@@ -262,6 +315,7 @@ export type Database = {
           max_uses?: number | null;
           current_uses?: number;
           expires_at?: string | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -271,18 +325,21 @@ export type Database = {
           id: string;
           customer_id: string;
           coupon_id: string;
+          tenant_id: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           customer_id: string;
           coupon_id: string;
+          tenant_id?: string;
           created_at?: string;
         };
         Update: {
           id?: string;
           customer_id?: string;
           coupon_id?: string;
+          tenant_id?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -295,6 +352,7 @@ export type Database = {
           entity_type: string;
           entity_id: string | null;
           payload: Json | null;
+          tenant_id: string;
           created_at: string;
         };
         Insert: {
@@ -304,6 +362,7 @@ export type Database = {
           entity_type: string;
           entity_id?: string | null;
           payload?: Json | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Update: {
@@ -312,6 +371,7 @@ export type Database = {
           entity_type?: string;
           entity_id?: string | null;
           payload?: Json | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -324,6 +384,7 @@ export type Database = {
           treatment_type: string;
           products_used: string | null;
           groomer_notes: string | null;
+          tenant_id: string;
           created_at: string;
         };
         Insert: {
@@ -333,6 +394,7 @@ export type Database = {
           treatment_type: string;
           products_used?: string | null;
           groomer_notes?: string | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Update: {
@@ -341,6 +403,7 @@ export type Database = {
           treatment_type?: string;
           products_used?: string | null;
           groomer_notes?: string | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -351,6 +414,7 @@ export type Database = {
           dog_id: string;
           photo_url: string;
           caption: string | null;
+          tenant_id: string;
           created_at: string;
         };
         Insert: {
@@ -358,19 +422,21 @@ export type Database = {
           dog_id: string;
           photo_url: string;
           caption?: string | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Update: {
           dog_id?: string;
           photo_url?: string;
           caption?: string | null;
+          tenant_id?: string;
           created_at?: string;
         };
         Relationships: [];
       };
       system_settings: {
         Row: {
-          id: number;
+          tenant_id: string;
           mode: Database["public"]["Enums"]["operating_mode"];
           max_concurrent_assisted: number;
           enable_assisted_wash: boolean;
@@ -380,7 +446,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
-          id?: number;
+          tenant_id?: string;
           mode?: Database["public"]["Enums"]["operating_mode"];
           max_concurrent_assisted?: number;
           enable_assisted_wash?: boolean;
@@ -390,7 +456,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
-          id?: number;
+          tenant_id?: string;
           mode?: Database["public"]["Enums"]["operating_mode"];
           max_concurrent_assisted?: number;
           enable_assisted_wash?: boolean;
@@ -444,7 +510,7 @@ export type Database = {
           p_dog_id: string;
           p_start_time: string;
           p_end_time: string;
-          p_assisted?: boolean;
+          p_service_type?: Database["public"]["Enums"]["booking_service_type"];
         };
         Returns: {
           booking_id: string;
@@ -528,6 +594,10 @@ export type Database = {
           new_balance_credits: number;
           new_remaining_seconds: number;
         }[];
+      };
+      current_tenant_id: {
+        Args: Record<string, never>;
+        Returns: string;
       };
     };
   };

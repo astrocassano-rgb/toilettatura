@@ -143,4 +143,32 @@ foreach ($img in $images_sez3) {
     $webclient.UploadFile($remoteImg, $localImg)
 }
 
-Write-Host "All files uploaded successfully including selezione_3."
+# Create immagini_sito/boutique
+$dirUriBoutique = "ftp://$ftpHost/$ftpDir/immagini_sito/boutique/"
+try {
+    $request = [System.Net.FtpWebRequest]::Create($dirUriBoutique)
+    $request.Method = [System.Net.WebRequestMethods+Ftp]::MakeDirectory
+    $request.Credentials = New-Object System.Net.NetworkCredential($user, $pass)
+    $response = $request.GetResponse()
+    $response.Close()
+    Write-Host "Created directory immagini_sito/boutique on FTP."
+} catch {
+    Write-Host "Directory immagini_sito/boutique might already exist."
+}
+
+$images_boutique = @(
+    "shampoo_avena.png",
+    "balsamo_cocco.png",
+    "spazzola_cardatore.png",
+    "salviette_aloe.png"
+)
+
+foreach ($img in $images_boutique) {
+    $localImg = "C:\Users\info\Documents\cane\Toilettatura\marketing-aruba\immagini_sito\boutique\$img"
+    $remoteImg = "ftp://$ftpHost/$ftpDir/immagini_sito/boutique/$img"
+    Write-Host "Uploading boutique/$img to FTP..."
+    $webclient.UploadFile($remoteImg, $localImg)
+}
+
+Write-Host "All files uploaded successfully including selezione_3 and boutique."
+

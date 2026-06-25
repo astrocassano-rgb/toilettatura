@@ -2,30 +2,22 @@ import "server-only";
 import { redirect, notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function requireAdmin(options?: { next?: string; mode?: "redirect" | "notFound" }) {
+export async function requireSuperAdmin(options?: { next?: string; mode?: "redirect" | "notFound" }) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
 
   if (!user) {
-    const next = options?.next ?? "/admin";
+    const next = options?.next ?? "/superadmin";
     redirect(`/login?next=${encodeURIComponent(next)}`);
   }
 
   const role = (user as any)?.app_metadata?.role;
-  const isAdmin = role === "admin";
-  if (!isAdmin) {
+  const isSuperAdmin = role === "superadmin";
+  if (!isSuperAdmin) {
     if (options?.mode === "notFound") notFound();
     redirect("/");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .maybeSingle() as any;
-  const tenantId = profile?.tenant_id || "00000000-0000-0000-0000-000000000000";
-
-  return { supabase, user, tenantId };
+  return { supabase, user };
 }
-

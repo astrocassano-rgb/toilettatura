@@ -13,7 +13,7 @@ export async function POST(_: Request, context: { params: Promise<{ bookingId: s
 
   const { data: booking } = await supabase
     .from("bookings")
-    .select("id, customer_id, station_id, start_time, end_time, status")
+    .select("id, customer_id, station_id, start_time, end_time, status, tenant_id")
     .eq("id", bookingId)
     .eq("customer_id", user.id)
     .maybeSingle();

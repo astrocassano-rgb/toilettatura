@@ -37,6 +37,14 @@ export async function POST(req: NextRequest) {
     }
     const userId = user.id;
 
+    // Recupera il tenant_id dell'utente
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("tenant_id")
+      .eq("id", userId)
+      .maybeSingle();
+    const tenantId = profile?.tenant_id || "00000000-0000-0000-0000-000000000000";
+
     const startTime = new Date(p_start_time);
     const endTime = new Date(p_end_time);
 
@@ -51,6 +59,7 @@ export async function POST(req: NextRequest) {
       {
         p_from: p_start_time as string,
         p_to: p_end_time as string,
+        p_tenant_id: tenantId,
       }
     );
 
@@ -77,6 +86,7 @@ export async function POST(req: NextRequest) {
       .from("stations")
       .select("id, cost_per_minute, status")
       .eq("id", p_station_id)
+      .eq("tenant_id", tenantId)
       .single();
     const station = stationRaw as { id: string; cost_per_minute: number; status: string } | null;
 
@@ -93,6 +103,7 @@ export async function POST(req: NextRequest) {
       .select("id, name")
       .eq("id", p_dog_id)
       .eq("owner_id", userId)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
 
     if (dogErr || !dog) {
@@ -105,7 +116,7 @@ export async function POST(req: NextRequest) {
       .select(
         "enable_assisted_wash, price_assisted_wash_credits, enable_full_grooming, price_full_grooming_credits"
       )
-      .eq("id", 1)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
     const settings = settingsRaw as {
       enable_assisted_wash: boolean;
@@ -144,6 +155,7 @@ export async function POST(req: NextRequest) {
       .from("wallets")
       .select("id, balance_credits")
       .eq("customer_id", userId)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
     const wallet = walletRaw as { id: string; balance_credits: number } | null;
 
@@ -179,6 +191,7 @@ export async function POST(req: NextRequest) {
         total_credits: totalCredits,
         service_type: p_service_type,
         operator_cost_credits: operatorCost,
+        tenant_id: tenantId,
       })
       .select("id, status, total_credits")
       .single();
@@ -210,6 +223,7 @@ export async function POST(req: NextRequest) {
       amount_credits: totalCredits,
       amount_currency: 0,
       stripe_intent_id: null,
+      tenant_id: tenantId,
       note:
         p_service_type === "ASSISTED_WASH"
           ? "Prenotazione Lavaggio Assistito"

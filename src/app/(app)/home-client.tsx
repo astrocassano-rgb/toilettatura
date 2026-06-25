@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createGoogleCalendarUrl } from "@/lib/booking-planner";
 import { tryCreateSupabaseBrowserClient } from "@/lib/supabase/optional";
+import { getTenantIdFromClient } from "@/lib/tenant-client";
 import { safeGetSession } from "@/lib/supabase/safe-session";
 import type { Database } from "@/types/database";
 
@@ -136,7 +137,17 @@ export default function HomeClient() {
     setAuthLoading(true);
     try {
       const emailRedirectTo = typeof window !== "undefined" ? `${window.location.origin}/login?next=${encodeURIComponent("/")}` : undefined;
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo } });
+      const tenantId = await getTenantIdFromClient();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo,
+          data: {
+            tenant_id: tenantId
+          }
+        }
+      });
       if (error) throw error;
       if (data.session) {
         const redirected = await maybeRequireProfileCompletion(data.session.user as any);
@@ -200,7 +211,7 @@ export default function HomeClient() {
         supabase.from("wallets").select("balance_credits").eq("customer_id", userId).maybeSingle(),
         supabase
           .from("bookings")
-          .select("id, dog_id, station_id, start_time, end_time, status, total_credits, customer_id, created_at, service_type, operator_cost_credits")
+          .select("id, dog_id, station_id, start_time, end_time, status, total_credits, customer_id, created_at, service_type, operator_cost_credits, tenant_id")
           .eq("customer_id", userId)
           .in("status", ["PENDING", "CONFIRMED"])
           .gte("start_time", new Date().toISOString())

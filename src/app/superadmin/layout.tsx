@@ -1,52 +1,35 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireSuperAdmin } from "@/lib/auth/require-superadmin";
 import { LogoutButton } from "@/components/layout/logout-button";
 import { AdminNavLink } from "@/components/layout/admin-nav-link";
 import {
-  Calendar,
-  Users,
-  CreditCard,
-  MapPin,
-  Tag,
-  Monitor,
-  Zap,
+  ShieldAlert,
+  Building,
+  Home,
   ChevronRight,
-  ClipboardList,
-  Settings,
+  TrendingUp,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 const navItems = [
-  { href: "/admin/prenotazioni", label: "Prenotazioni", Icon: Calendar },
-  { href: "/admin/sessioni",     label: "Sessioni Live", Icon: Zap },
-  { href: "/admin/kiosk",        label: "Kiosk",         Icon: Monitor },
-  { href: "/admin/clienti",      label: "Clienti",       Icon: Users },
-  { href: "/admin/pagamenti",    label: "Pagamenti",     Icon: CreditCard },
-  { href: "/admin/postazioni",   label: "Postazioni",    Icon: MapPin },
-  { href: "/admin/coupons",      label: "Coupon",        Icon: Tag },
-  { href: "/admin/audit-logs",   label: "Registro Azioni", Icon: ClipboardList },
-  { href: "/admin/impostazioni", label: "Impostazioni",  Icon: Settings },
+  { href: "/superadmin",         label: "Dashboard Globale", Icon: ShieldAlert },
+  { href: "/superadmin/tenants",  label: "Gestione Saloni",    Icon: Building },
 ];
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { supabase, tenantId } = await requireAdmin({ next: "/admin", mode: "notFound" });
-  const { data: tenant } = await (supabase.from("tenants") as any)
-    .select("name")
-    .eq("id", tenantId)
-    .maybeSingle();
-  const tenantName = (tenant as any)?.name || "DogWash24";
+export default async function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  await requireSuperAdmin({ next: "/superadmin", mode: "notFound" });
 
   return (
-    <div className="min-h-dvh bg-slate-950">
-      {/* Radial gradient background coerente con brand marketing */}
+    <div className="min-h-dvh bg-slate-950 text-slate-100">
+      {/* Radial gradient background in stile superadmin (accento viola/magenta) */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(900px 700px at 15% 0%, rgba(6,182,212,0.06), transparent 60%), radial-gradient(700px 500px at 85% 80%, rgba(20,184,166,0.05), transparent 55%)",
+            "radial-gradient(900px 700px at 15% 0%, rgba(139,92,246,0.06), transparent 60%), radial-gradient(700px 500px at 85% 80%, rgba(219,39,119,0.04), transparent 55%)",
         }}
       />
 
@@ -64,13 +47,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 priority
                 className="h-full w-full object-contain rounded-xl"
               />
-              {/* Live dot */}
-              <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-slate-950 bg-emerald-400 z-10" />
+              <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-slate-950 bg-violet-500 z-10" />
             </div>
             <div>
-              <p className="text-sm font-bold tracking-tight text-slate-50">{tenantName}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-                Area Admin
+              <p className="text-sm font-bold tracking-tight text-slate-50">DogWash24</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-violet-400">
+                Super Admin
               </p>
             </div>
           </div>
@@ -107,8 +89,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </aside>
 
-        {/* ── MAIN CONTENT ──────────────────────────────────── */}
-        <main className="min-w-0">{children}</main>
+        {/* ── CONTENT ───────────────────────────────────────── */}
+        <main className="relative z-10 flex flex-col gap-6">{children}</main>
       </div>
     </div>
   );

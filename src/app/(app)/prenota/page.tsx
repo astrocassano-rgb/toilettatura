@@ -389,11 +389,58 @@ export default function PrenotaPage() {
     setLoading(true);
     setAvailabilityHint(null);
     try {
-      const { data: stationsData, error: stationsError } = await supabase.from("stations").select("*").order("created_at", { ascending: true });
+      // 1. Rileva il sottodominio dal client
+      let subdomain = "";
+      if (typeof window !== "undefined") {
+        const host = window.location.host; // pawspa.dogwash24.it, pawspa.localhost:3000
+        const domainParts = host.split(".");
+        if (host.includes("localhost") || host.includes("127.0.0.1")) {
+          const parts = host.split(":");
+          const part0 = parts[0];
+          if (part0) {
+            const localParts = part0.split(".");
+            if (localParts.length > 1) {
+              subdomain = localParts[0] || "";
+            }
+          }
+        } else {
+          if (domainParts.length >= 3) {
+            const sub = domainParts[0] || "";
+            if (sub !== "www" && sub !== "app") {
+              subdomain = sub;
+            }
+          }
+        }
+      }
+
+      // 2. Trova il tenant
+      let tenantId = "00000000-0000-0000-0000-000000000000";
+      if (subdomain) {
+        const { data: tenant } = await supabase
+          .from("tenants")
+          .select("id")
+          .eq("slug", subdomain)
+          .maybeSingle();
+        if (tenant) {
+          tenantId = tenant.id;
+        }
+      }
+
+      // 3. Carica le postazioni filtrate per tenant
+      const { data: stationsData, error: stationsError } = await supabase
+        .from("stations")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: true });
       if (stationsError) throw stationsError;
       setStations(stationsData ?? []);
 
-      const { data: settingsData, error: settingsError } = await supabase.from("system_settings").select("*").eq("id", 1).maybeSingle();
+      // 4. Carica le impostazioni del tenant
+      const { data: settingsData, error: settingsError } = await supabase
+        .from("system_settings")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
       if (!settingsError && settingsData) {
         setSettings(settingsData);
         if (settingsData.mode === "ASSISTED_ONLY") {
@@ -403,11 +450,17 @@ export default function PrenotaPage() {
 
       const args = {
         p_from: availabilityFrom.toISOString(),
-        p_to: availabilityTo.toISOString()
+        p_to: availabilityTo.toISOString(),
+        p_tenant_id: tenantId
       } as Database["public"]["Functions"]["get_booking_availability"]["Args"];
       const { data: availData, error: availError } = await supabase.rpc("get_booking_availability", args);
       if (availError) throw availError;
-      setAvailability(availData ?? []);
+
+      // Filtra le occupazioni solo per le postazioni del salone corrente
+      const filteredAvail = (availData ?? []).filter((av) =>
+        stationsData?.some((st) => st.id === av.station_id)
+      );
+      setAvailability(filteredAvail);
       setAvailabilityLoaded(true);
     } catch (e: any) {
       setAvailabilityLoaded(false);

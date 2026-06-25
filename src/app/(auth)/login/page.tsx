@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { tryCreateSupabaseBrowserClient } from "@/lib/supabase/optional";
+import { getTenantIdFromClient } from "@/lib/tenant-client";
 import { LogIn, Mail, UserPlus, ArrowLeft, Home, CalendarDays } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -233,7 +234,17 @@ function LoginContent() {
     setLoading(true);
     try {
       const emailRedirectTo = buildAuthCallbackUrl(nextPath);
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo } });
+      const tenantId = await getTenantIdFromClient();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo,
+          data: {
+            tenant_id: tenantId
+          }
+        }
+      });
       if (error) throw error;
 
       // Salva nome e cognome nel profilo appena creato (best-effort)
@@ -242,6 +253,7 @@ function LoginContent() {
           id: data.user.id,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
+          tenant_id: tenantId,
         });
       }
 

@@ -482,14 +482,12 @@
         transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .feature-card:hover .feature-icon,
-      .step-card:hover .step-icon-wrap,
-      .comparison-score-card:hover .score-icon {
+      .step-card:hover .step-icon-wrap {
         transform: translateY(-2px) scale(1.08) !important;
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35), 0 0 15px currentColor !important;
       }
       .feature-card:hover .feature-icon svg,
-      .step-card:hover .step-icon-wrap svg,
-      .comparison-score-card:hover .score-icon svg {
+      .step-card:hover .step-icon-wrap svg {
         transform: scale(1.1);
       }
 
@@ -571,73 +569,7 @@
       .showcase-card-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
       .showcase-card-sub { font-size: 12px; color: var(--muted); }
 
-      /* ════════════════════════════════════════════════════
-         CONFRONTO
-         ════════════════════════════════════════════════════ */
-      #confronto { padding: 96px 0; }
-      .comparison-scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-      .comparison-score-card {
-        border-radius: 18px; border: 1px solid var(--border);
-        background: var(--card2); padding: 16px; text-align: center;
-        transition: all 0.3s;
-      }
-      .comparison-score-card.highlight {
-        border-color: rgba(6,182,212,0.4); background: rgba(6,182,212,0.06);
-        box-shadow: 0 0 30px rgba(6,182,212,0.12);
-      }
-      .score-icon {
-        width: 40px; height: 40px; border-radius: 12px; margin: 0 auto 8px;
-        display: flex; align-items: center; justify-content: center; font-size: 18px;
-      }
-      .score-icon.primary { background: linear-gradient(135deg, var(--cyan), var(--teal)); }
-      .score-icon.muted { background: rgba(255,255,255,0.07); }
-      .score-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
-      .score-num { font-size: 26px; font-weight: 900; }
-      .score-num.primary { color: var(--cyan); }
-      .score-total { font-size: 12px; color: var(--muted2); }
-      .score-badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; background: rgba(6,182,212,0.12); color: var(--cyan); padding: 2px 8px; font-size: 9px; font-weight: 700; margin-top: 4px; }
 
-      .comparison-table {
-        border-radius: var(--radius); border: 1px solid var(--border);
-        background: var(--card2); overflow: hidden;
-      }
-      .comparison-thead {
-        display: none; grid-template-columns: 1.4fr 1fr 1fr 1fr;
-        gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--border);
-        background: rgba(255,255,255,0.02); font-size: 12px; font-weight: 700;
-        text-transform: uppercase; letter-spacing: 0.08em;
-      }
-      @media (min-width: 600px) { .comparison-thead { display: grid; } }
-      .comparison-thead .col-primary { color: var(--cyan); }
-      .comparison-thead .col-muted { color: var(--muted2); }
-      .comparison-row {
-        display: grid; padding: 12px 20px; border-bottom: 1px solid var(--border2);
-        transition: background 0.15s; gap: 8px;
-        grid-template-columns: 1fr;
-      }
-      @media (min-width: 600px) { .comparison-row { grid-template-columns: 1.4fr 1fr 1fr 1fr; align-items: center; } }
-      .comparison-row:last-child { border-bottom: none; }
-      .comparison-row:hover { background: rgba(6,182,212,0.025); }
-      .comparison-row .feature-name { font-size: 13px; font-weight: 500; }
-      .comparison-row .cell { display: flex; align-items: center; gap: 6px; }
-      @media (min-width: 600px) { .comparison-row .cell { justify-content: center; } }
-      .cell-label { font-size: 11px; font-weight: 600; color: var(--muted2); }
-      @media (min-width: 600px) { .cell-label { display: none; } }
-      .cell-yes {
-        width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        font-size: 13px; font-weight: 700;
-      }
-      .cell-yes.primary { background: linear-gradient(135deg, var(--cyan), var(--teal)); color: #020617; }
-      .cell-yes.muted { background: var(--emerald-dim); color: var(--emerald); }
-      .cell-no { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; background: rgba(255,255,255,0.05); color: var(--muted2); }
-      .cell-partial {
-        border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 700;
-        background: var(--amber-dim); color: var(--amber);
-      }
-      .cell-na {
-        border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 700;
-        background: rgba(255,255,255,0.05); color: var(--muted2);
-      }
 
       /* ════════════════════════════════════════════════════
          ROI CALCULATOR
@@ -775,11 +707,6 @@
       .plan-check.primary { background: linear-gradient(135deg, var(--cyan), var(--teal)); color: #020617; }
       .plan-check.muted { background: var(--cyan-dim); color: var(--cyan); }
       .plan-cta { width: 100%; justify-content: center; margin-top: 4px; }
-      .pricing-trust {
-        margin-top: 36px; display: flex; flex-wrap: wrap; gap: 20px;
-        align-items: center; justify-content: center; font-size: 12px; color: var(--muted);
-      }
-      .pricing-trust .stars { display: flex; gap: 2px; }
       .star { color: var(--amber); }
 
       /* ════════════════════════════════════════════════════
@@ -1130,7 +1057,6 @@
 
       /* ── RESPONSIVE HELPERS ────────────────────────────── */
       @media (max-width: 640px) {
-        .comparison-scores { grid-template-columns: 1fr; gap: 8px; }
         .roi-breakdown { grid-template-columns: 1fr; }
         .hero-ctas { flex-direction: column; }
         .hero-ctas .btn { width: 100%; justify-content: center; }
@@ -1151,7 +1077,6 @@
           <nav class="header-nav">
             <a href="#come-funziona">Come funziona</a>
             <a href="#funzionalita">Funzionalità</a>
-            <a href="#confronto">Confronto</a>
             <a href="#roi">ROI</a>
             <a href="#prezzi">Prezzi</a>
             <a href="#faq">FAQ</a>
@@ -1167,7 +1092,6 @@
         <div id="mobile-menu">
           <a href="#come-funziona" onclick="closeMenu()">Come funziona</a>
           <a href="#funzionalita" onclick="closeMenu()">Funzionalità</a>
-          <a href="#confronto" onclick="closeMenu()">Confronto</a>
           <a href="#roi" onclick="closeMenu()">Calcolatore ROI</a>
           <a href="#prezzi" onclick="closeMenu()">Prezzi</a>
           <a href="#faq" onclick="closeMenu()">FAQ</a>
@@ -1746,101 +1670,6 @@
       </div>
     </section>
 
-    <!-- ══ CONFRONTO ═════════════════════════════════════════ -->
-    <section id="confronto">
-      <div class="container container-sm">
-        <div class="section-heading">
-          <div class="kicker">Confronto</div>
-          <h2>DogWash24 vs <span class="text-gradient">le alternative</span></h2>
-          <p>Una tabella chiara per capire cosa cambia davvero passando a una piattaforma H24 dedicata.</p>
-        </div>
-        <!-- Score badges -->
-        <div class="comparison-scores fade-up">
-          <div class="comparison-score-card highlight">
-            <div class="score-icon icon-gold">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-                <defs>
-                  <linearGradient id="gold-crown-comp" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#f59e0b" />
-                    <stop offset="100%" stop-color="#fbbf24" />
-                  </linearGradient>
-                </defs>
-                <path d="M2 18l1.5-10 4.5 4 4-6 4 6 4.5-4 1.5 10H2z" fill="url(#gold-crown-comp)" />
-                <circle cx="3.5" cy="8" r="0.8" fill="#ffffff" />
-                <circle cx="8" cy="12" r="0.8" fill="#ffffff" />
-                <circle cx="12" cy="6" r="0.8" fill="#ffffff" />
-                <circle cx="16" cy="12" r="0.8" fill="#ffffff" />
-                <circle cx="20.5" cy="8" r="0.8" fill="#ffffff" />
-                <path d="M12 11c-.3 0-.5.2-.5.5s.2.5.5.5.5-.2.5-.5-.2-.5-.5-.5zm-.9.5c-.2 0-.3.1-.3.3s.1.3.3.3.3-.1.3-.3-.1-.3-.3-.3zm1.8 0c-.2 0-.3.1-.3.3s.1.3.3.3.3-.1.3-.3-.1-.3-.3-.3zm-1 1c-.4 0-.8.3-.8.7 0 .3.2.5.5.5h.6c.3 0 .5-.2.5-.5 0-.4-.4-.7-.8-.7z" fill="#020617" />
-                <rect x="2" y="17" width="20" height="1.5" fill="#d97706" />
-              </svg>
-            </div>
-            <div class="score-name">DogWash24</div>
-            <div class="score-num primary" id="score-dw">—</div>
-            <div class="score-total">su 11 funzioni</div>
-            <div class="score-badge">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 10px; height: 10px; color: var(--cyan); display: inline-block; vertical-align: middle; margin-right: 4px; margin-top: -1px;">
-                <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/>
-              </svg>Migliore
-            </div>
-          </div>
-          <div class="comparison-score-card">
-            <div class="score-icon icon-slate">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-                <defs>
-                  <linearGradient id="slate-grad-comp1" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#94a3b8" />
-                    <stop offset="100%" stop-color="#475569" />
-                  </linearGradient>
-                </defs>
-                <rect x="4" y="5" width="12" height="15" rx="1.5" fill="none" stroke="url(#slate-grad-comp1)" stroke-width="2" />
-                <rect x="8" y="3" width="4" height="2" rx="0.5" fill="url(#slate-grad-comp1)" />
-                <line x1="7" y1="9" x2="13" y2="9" stroke="url(#slate-grad-comp1)" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.6" />
-                <line x1="7" y1="12" x2="11" y2="12" stroke="url(#slate-grad-comp1)" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.6" />
-                <path d="M17 9l3 3-3 3M20 9v6" stroke="url(#slate-grad-comp1)" stroke-width="1.5" stroke-linecap="round" />
-                <path d="M17 10h3M17 14h3" stroke="url(#slate-grad-comp1)" stroke-width="1.5" />
-              </svg>
-            </div>
-            <div class="score-name">Gestione manuale</div>
-            <div class="score-num" id="score-manual">—</div>
-            <div class="score-total">su 11 funzioni</div>
-          </div>
-          <div class="comparison-score-card">
-            <div class="score-icon icon-slate">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-                <defs>
-                  <linearGradient id="server-grad-comp2" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#94a3b8" />
-                    <stop offset="100%" stop-color="#475569" />
-                  </linearGradient>
-                </defs>
-                <rect x="4" y="3" width="16" height="18" rx="2" fill="none" stroke="url(#server-grad-comp2)" stroke-width="2" />
-                <rect x="7" y="6" width="10" height="2.5" rx="0.5" fill="none" stroke="url(#server-grad-comp2)" stroke-width="1.5" stroke-opacity="0.6" />
-                <circle cx="15" cy="7.25" r="0.5" fill="#f59e0b" />
-                <rect x="7" y="11" width="10" height="2.5" rx="0.5" fill="none" stroke="url(#server-grad-comp2)" stroke-width="1.5" stroke-opacity="0.6" />
-                <circle cx="15" cy="12.25" r="0.5" fill="#f59e0b" />
-                <rect x="7" y="16" width="10" height="2.5" rx="0.5" fill="none" stroke="url(#server-grad-comp2)" stroke-width="1.5" stroke-opacity="0.6" />
-                <circle cx="15" cy="17.25" r="0.5" fill="#ef4444" />
-              </svg>
-            </div>
-            <div class="score-name">Altri software</div>
-            <div class="score-num" id="score-comp">—</div>
-            <div class="score-total">su 11 funzioni</div>
-          </div>
-        </div>
-        <!-- Table -->
-        <div class="comparison-table fade-up" style="transition-delay:0.1s">
-          <div class="comparison-thead">
-            <div class="col-muted">Funzionalità</div>
-            <div class="col-primary" style="text-align:center">DogWash24</div>
-            <div class="col-muted" style="text-align:center">Manuale</div>
-            <div class="col-muted" style="text-align:center">Altri software</div>
-          </div>
-          <div id="comparison-rows"></div>
-        </div>
-      </div>
-    </section>
-
     <!-- ══ PREZZI ═════════════════════════════════════════════ -->
     <section id="prezzi">
       <div class="container">
@@ -1915,16 +1744,7 @@
             <a href="mailto:info@dogwash24.it?subject=Acquisto%20piattaforma%20completa" class="btn btn-lg plan-cta">Richiedi preventivo →</a>
           </div>
         </div>
-        <div class="pricing-trust fade-up">
-          <span>
-            <span class="stars">
-              <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
-            </span>
-            <strong style="margin-left:6px">4.9/5</strong> da 1.200+ strutture
-          </span>
-          <span>Setup iniziale una tantum</span>
-          <span>Disdetta 30 giorni</span>
-        </div>
+
       </div>
     </section>
 
@@ -2021,7 +1841,6 @@
             <div class="footer-links">
               <a href="#come-funziona">Come funziona</a>
               <a href="#funzionalita">Funzionalità</a>
-              <a href="#confronto">Confronto</a>
               <a href="#prezzi">Prezzi</a>
               <a href="https://toilettatura.vercel.app">Accedi all'App</a>
             </div>
@@ -2042,7 +1861,7 @@
           📌 Nota tecnica: questa pagina è progettata per hosting statico (es. Aruba Hosting Basic). La webapp completa gira su infrastruttura Node.js/Vercel e si collega a (https://toilettatura.vercel.app/).
         </div>
         <div class="footer-bottom">
-          <span>© 2025 DogWash24. Tutti i diritti riservati.</span>
+          <span>© 2025 DogWash24. Tutti i diritti riservati · Realizzato da <a href="https://davidefiore.com" target="_blank" style="color:#64748b;text-decoration:underline;">Davide Fiore</a></span>
           <span><a href="privacy.html" style="color:#64748b;text-decoration:underline;">Privacy Policy</a> · Piattaforma SaaS per toelettatura self-service H24</span>
         </div>
       </div>
@@ -2061,19 +1880,6 @@
       { name:'Sara M.', role:'Responsabile · DogClean Firenze', initials:'SM', accent:'#8b5cf6,#7c3aed', rating:5, quote:'Il calcolatore ROI non mente: da quando abbiamo aperto H24 le sessioni sono cresciute del 40%. Il sistema si paga da solo in 2 mesi.' }
     ];
 
-    const COMPARISON_ROWS = [
-      { f:'Prenotazione online real-time', dw:true,  man:false, comp:'Parziale' },
-      { f:'Anti-overbooking automatico',   dw:true,  man:false, comp:false },
-      { f:'Wallet a crediti prepagati',    dw:true,  man:false, comp:false },
-      { f:'Check-in QR con token firmato', dw:true,  man:false, comp:false },
-      { f:'Sessioni live con timer',        dw:true,  man:false, comp:'Parziale' },
-      { f:'Dashboard admin completa',      dw:true,  man:false, comp:'Parziale' },
-      { f:'Report & export CSV',           dw:true,  man:'Fogli Excel', comp:'Parziale' },
-      { f:'Operatività H24 senza presidio',dw:true,  man:false, comp:false },
-      { f:'Profili cane multi-pet',        dw:true,  man:false, comp:'Parziale' },
-      { f:'Integrazione kiosk postazione', dw:true,  man:'N/A', comp:false },
-      { f:'Opzione Assistita / Sistema Ibrido', dw:true,  man:'Presenza fisica', comp:false }
-    ];
 
     const FAQS = [
       { q:'Quanto tempo serve per il setup iniziale?', a:'Di norma 7 giorni lavorativi dalla firma del contratto. Include configurazione struttura, postazioni, listino crediti, onboarding e test di verifica. Il nostro team segue l\'intero processo.' },
@@ -2094,7 +1900,6 @@
       buildQR();
       startTimer();
       buildBubbles();
-      buildComparisonTable();
       buildTestimonials();
       buildFAQ();
       updateROI();
@@ -2193,39 +1998,7 @@
       document.querySelectorAll('[data-target]').forEach(function(el) { obs.observe(el); });
     }
 
-    // ── COMPARISON TABLE ──────────────────────────────────────
-    function buildComparisonTable() {
-      let scoreDW = 0, scoreMan = 0, scoreComp = 0;
-      const container = document.getElementById('comparison-rows');
-      if (!container) return;
-      COMPARISON_ROWS.forEach(function(row) {
-        if (row.dw === true) scoreDW++;
-        if (row.man === true) scoreMan++;
-        if (row.comp === true) scoreComp++;
 
-        const div = document.createElement('div');
-        div.className = 'comparison-row';
-        div.innerHTML = '<div class="feature-name">' + row.f + '</div>' +
-          '<div class="cell"><span class="cell-label">DogWash24:</span>' + renderCell(row.dw, true) + '</div>' +
-          '<div class="cell"><span class="cell-label">Manuale:</span>' + renderCell(row.man, false) + '</div>' +
-          '<div class="cell"><span class="cell-label">Altri:</span>' + renderCell(row.comp, false) + '</div>';
-        container.appendChild(div);
-      });
-      document.getElementById('score-dw').textContent = scoreDW + '/' + COMPARISON_ROWS.length;
-      document.getElementById('score-manual').textContent = scoreMan + '/' + COMPARISON_ROWS.length;
-      document.getElementById('score-comp').textContent = scoreComp + '/' + COMPARISON_ROWS.length;
-    }
-
-    function renderCell(value, highlight) {
-      if (value === true) {
-        return '<div class="cell-yes ' + (highlight ? 'primary' : 'muted') + '">✓</div>';
-      }
-      if (value === false) {
-        return '<div class="cell-no">✗</div>';
-      }
-      if (value === 'N/A') return '<span class="cell-na">N/A</span>';
-      return '<span class="cell-partial">' + value + '</span>';
-    }
 
     // ── ROI CALCULATOR ────────────────────────────────────────
     function updateROI() {

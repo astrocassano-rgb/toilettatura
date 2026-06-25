@@ -78,7 +78,7 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
     ? statusRaw
     : "NOT_CANCELLED") as StatusFilter;
 
-  const { supabase } = await requireAdmin({ next: "/admin/prenotazioni", mode: "notFound" });
+  const { supabase, tenantId } = await requireAdmin({ next: "/admin/prenotazioni", mode: "notFound" });
 
   let query = supabase
     .from("bookings")
@@ -111,7 +111,7 @@ export default async function AdminPrenotazioniPage({ searchParams }: { searchPa
     supabase.from("dogs").select("id, name, owner_id"),
     supabase.from("stations").select("id, name, type"),
     supabase.from("profiles").select("id, email, first_name, last_name"),
-    supabase.from("system_settings").select("*").eq("id", 1).single()
+    supabase.from("system_settings").select("*").eq("tenant_id", tenantId).maybeSingle()
   ]);
 
   const allDogs = allDogsAny as any[];
