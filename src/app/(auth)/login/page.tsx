@@ -111,14 +111,14 @@ function LoginContent() {
     if (shouldHandleCode || shouldHandleHash) return;
 
     void (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        const redirected = await maybeRequireProfileCompletion(data.session.user as any);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const redirected = await maybeRequireProfileCompletion(user as any);
         if (redirected) return;
-        router.replace(resolvePostLoginPath(nextPath, data.session.user as any) as Route);
+        window.location.href = resolvePostLoginPath(nextPath, user as any);
       }
     })();
-  }, [supabase, searchParams, nextPath, maybeRequireProfileCompletion, router]);
+  }, [supabase, searchParams, nextPath, maybeRequireProfileCompletion]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -172,22 +172,21 @@ function LoginContent() {
           window.history.replaceState({}, document.title, cleaned);
         }
 
-        const { data, error } = await supabase.auth.getSession();
-        if (error || !data.session) {
-          setMessage(String(error?.message || "Sessione non trovata dopo il login."));
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setMessage("Sessione non trovata dopo il login.");
           return;
         }
 
-        const redirected = await maybeRequireProfileCompletion(data.session.user as any);
+        const redirected = await maybeRequireProfileCompletion(user as any);
         if (redirected) return;
 
-        router.replace(resolvePostLoginPath(nextPath, data.session.user as any) as Route);
-        router.refresh();
+        window.location.href = resolvePostLoginPath(nextPath, user as any);
       } catch (e: any) {
         setMessage(String(e?.message ?? "Accesso non riuscito."));
       }
     })();
-  }, [maybeRequireProfileCompletion, nextPath, router, searchParams, supabase]);
+  }, [maybeRequireProfileCompletion, nextPath, searchParams, supabase]);
 
   const toFriendlyMessage = (e: any, fallback: string) => {
     const msg = String(e?.message ?? "");
@@ -230,7 +229,7 @@ function LoginContent() {
       const redirected = await maybeRequireProfileCompletion(data.user as any);
       if (redirected) return;
 
-      router.replace(resolvePostLoginPath(nextPath, data.user as any) as Route);
+      window.location.href = resolvePostLoginPath(nextPath, data.user as any);
     } catch (e: any) {
       setMessage(toFriendlyMessage(e, "Accesso non riuscito."));
     } finally {
@@ -274,7 +273,7 @@ function LoginContent() {
         const redirected = await maybeRequireProfileCompletion(data.session.user as any);
         if (redirected) return;
 
-        router.replace(resolvePostLoginPath(nextPath, data.session.user as any) as Route);
+        window.location.href = resolvePostLoginPath(nextPath, data.session.user as any);
       } else {
         setMessage("Account creato! Controlla la email e conferma la registrazione, poi torna qui e accedi.");
         setCanResend(true);
