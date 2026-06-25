@@ -47,17 +47,24 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Se l'utente è loggato e prova ad andare su /login, lo rimandiamo alla destinazione desiderata oppure alla home
+  // Se l'utente è loggato e prova ad andare su /login, lo rimandiamo alla destinazione desiderata o a quella basata sul ruolo
   if (request.nextUrl.pathname === '/login' && user) {
     const nextPath = request.nextUrl.searchParams.get('next');
     const targetUrl = request.nextUrl.clone();
+    const role = (user as any)?.app_metadata?.role;
 
     if (nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')) {
       const nextUrl = new URL(nextPath, request.url);
       targetUrl.pathname = nextUrl.pathname;
       targetUrl.search = nextUrl.search;
     } else {
-      targetUrl.pathname = '/';
+      if (role === "superadmin") {
+        targetUrl.pathname = '/superadmin';
+      } else if (role === "admin") {
+        targetUrl.pathname = '/admin';
+      } else {
+        targetUrl.pathname = '/';
+      }
       targetUrl.search = '';
     }
 
