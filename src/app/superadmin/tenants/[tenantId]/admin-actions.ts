@@ -5,6 +5,16 @@ import { requireSuperAdmin } from "@/lib/auth/require-superadmin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
+/**
+ * Gestione amministratori di salone — modello MULTI-SALONE (claude.ai).
+ *
+ * Fonte di verità del ruolo admin = `tenant_customers.role = 'admin'` per (utente, salone).
+ * `app_metadata.role = 'admin'` resta un FLAG GENERICO ("è un amministratore di qualche salone"),
+ * usato solo dal middleware per il redirect dopo il login. NON viene più legato a un singolo
+ * `tenant_id`: così una stessa persona può amministrare PIÙ saloni (la vecchia logica, scrivendo
+ * `app_metadata.tenant_id`, la confinava a un solo salone).
+ */
+
 export async function addTenantAdminAction(tenantId: string, email: string) {
   try {
     await requireSuperAdmin();
@@ -21,7 +31,7 @@ export async function addTenantAdminAction(tenantId: string, email: string) {
   const adminSupabase = createSupabaseAdminClient();
 
   try {
-    // 1. Cerca se l'utente esiste già in auth
+    // 1. Cerca se l'utente esiste già in auth (paginazione).
     let existingUser = null;
     let page = 1;
     while (page <= 20) {
@@ -30,7 +40,7 @@ export async function addTenantAdminAction(tenantId: string, email: string) {
         return { error: `Errore durante la ricerca dell'utente: ${listError.message}` };
       }
       const users = listData?.users ?? [];
-      const match = users.find(u => (u.email ?? "").toLowerCase() === cleanEmail);
+      const match = users.find((u) => (u.email ?? "").toLowerCase() === cleanEmail);
       if (match) {
         existingUser = match;
         break;
@@ -39,93 +49,87 @@ export async function addTenantAdminAction(tenantId: string, email: string) {
       page++;
     }
 
+    let targetUserId: string;
+    let invited = false;
+
     if (existingUser) {
-      // 2. L'utente esiste già: lo promuoviamo ad admin di questo salone
-      const appMetadata = { ...(existingUser.app_metadata ?? {}), role: "admin", tenant_id: tenantId };
-      const userMetadata = { ...(existingUser.user_metadata ?? {}), tenant_id: tenantId };
+      targetUserId = existingUser.id;
 
-      const { error: updateAuthErr } = await adminSupabase.auth.admin.updateUserById(existingUser.id, {
+      // Flag generico "amministratore" SENZA pinnare un singolo tenant (multi-salone).
+      // Si preserva l'eventuale app_metadata esistente (incluso un tenant_id storico, ormai non
+      // più usato per l'autorizzazione: quella passa da tenant_customers).
+      const appMetadata = { ...(existingUser.app_metadata ?? {}), role: "admin" };
+      const { error: updateAuthErr } = await adminSupabase.auth.admin.updateUserById(targetUserId, {
         app_metadata: appMetadata,
-        user_metadata: userMetadata
       });
-
       if (updateAuthErr) {
         return { error: `Errore aggiornamento metadati auth: ${updateAuthErr.message}` };
       }
 
-      // 3. Aggiorna il profilo pubblico
-      const { data: profile } = await adminSupabase
-        .from("profiles")
-        .select("id")
-        .eq("id", existingUser.id)
-        .maybeSingle();
-
+      // Assicura il profilo pubblico.
+      const { data: profile } = await adminSupabase.from("profiles").select("id").eq("id", targetUserId).maybeSingle();
       if (!profile) {
-        const { error: insertProfileErr } = await adminSupabase
-          .from("profiles")
-          .insert({ id: existingUser.id, email: cleanEmail });
-
+        const { error: insertProfileErr } = await adminSupabase.from("profiles").insert({ id: targetUserId, email: cleanEmail });
         if (insertProfileErr) {
           return { error: `Errore creazione profilo: ${insertProfileErr.message}` };
         }
       }
-
-      // 3.1. Associa l'utente come admin per questo specifico salone nella tabella tenant_customers
-      const { error: insertMembershipErr } = await adminSupabase
-        .from("tenant_customers")
-        .upsert({ customer_id: existingUser.id, tenant_id: tenantId, role: "admin" });
-
-      if (insertMembershipErr) {
-        return { error: `Errore associazione ruolo admin: ${insertMembershipErr.message}` };
-      }
-
-      // 4. Assicura la presenza del portafoglio per questo specifico salone
-      const { data: existingWallet } = await adminSupabase
-        .from("wallets")
-        .select("id")
-        .eq("customer_id", existingUser.id)
-        .eq("tenant_id", tenantId)
-        .maybeSingle();
-
-      if (!existingWallet) {
-        const { error: walletErr } = await adminSupabase
-          .from("wallets")
-          .insert({ customer_id: existingUser.id, tenant_id: tenantId, balance_credits: 0 });
-        if (walletErr) {
-          console.error("Errore creazione portafoglio:", walletErr.message);
-        }
-      }
-
-      revalidatePath(`/superadmin/tenants/${tenantId}`);
-      return { success: true, message: `Utente ${cleanEmail} promosso ad Amministratore con successo.` };
     } else {
-      // 5. L'utente non esiste: inviamo un invito email
+      // 2. L'utente non esiste: invito via email. `data.tenant_id` serve a handle_new_user per
+      // collegare il salone di registrazione; il ruolo admin lo forziamo subito sotto in tenant_customers.
       const { data: inviteData, error: inviteErr } = await adminSupabase.auth.admin.inviteUserByEmail(cleanEmail, {
-        data: { tenant_id: tenantId }
+        data: { tenant_id: tenantId },
       });
-
       if (inviteErr) {
         return { error: `Errore durante l'invio dell'invito: ${inviteErr.message}` };
       }
-
       const invitedId = inviteData?.user?.id;
       if (!invitedId) {
         return { error: "Invito inviato ma nessun ID utente generato." };
       }
+      targetUserId = invitedId;
+      invited = true;
 
-      // Impostiamo il ruolo di admin fin da subito nei metadati
       const { error: updateAuthErr } = await adminSupabase.auth.admin.updateUserById(invitedId, {
-        app_metadata: { role: "admin", tenant_id: tenantId },
-        user_metadata: { tenant_id: tenantId }
+        app_metadata: { role: "admin" },
       });
-
       if (updateAuthErr) {
         return { error: `Errore impostazione ruolo utente invitato: ${updateAuthErr.message}` };
       }
-
-      revalidatePath(`/superadmin/tenants/${tenantId}`);
-      return { success: true, message: `Invito inviato con successo a ${cleanEmail}. Diventerà amministratore appena accetterà l'invito.` };
     }
+
+    // 3. Sorgente di verità del ruolo: upsert dell'appartenenza come admin di QUESTO salone.
+    // Upsert → se già membro (anche come 'customer') viene promosso ad 'admin' senza duplicati.
+    const { error: membershipErr } = await (adminSupabase as any)
+      .from("tenant_customers")
+      .upsert({ customer_id: targetUserId, tenant_id: tenantId, role: "admin" });
+    if (membershipErr) {
+      return { error: `Errore associazione ruolo admin: ${membershipErr.message}` };
+    }
+
+    // 4. Assicura il portafoglio del salone (saldo 0) per coerenza dati.
+    const { data: existingWallet } = await adminSupabase
+      .from("wallets")
+      .select("id")
+      .eq("customer_id", targetUserId)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    if (!existingWallet) {
+      const { error: walletErr } = await adminSupabase
+        .from("wallets")
+        .insert({ customer_id: targetUserId, tenant_id: tenantId, balance_credits: 0 });
+      if (walletErr) {
+        console.error("Errore creazione portafoglio:", walletErr.message);
+      }
+    }
+
+    revalidatePath(`/superadmin/tenants/${tenantId}`);
+    return {
+      success: true,
+      message: invited
+        ? `Invito inviato a ${cleanEmail}. Diventerà amministratore appena accetterà.`
+        : `Utente ${cleanEmail} promosso ad amministratore del salone.`,
+    };
   } catch (err: any) {
     console.error("Errore addTenantAdminAction:", err);
     return { error: err?.message || "Si è verificato un errore imprevisto." };
@@ -147,39 +151,33 @@ export async function removeTenantAdminAction(tenantId: string, userId: string) 
   const adminSupabase = createSupabaseAdminClient();
 
   try {
-    // 1. Recupera l'utente
-    const { data: userData, error: getUserErr } = await adminSupabase.auth.admin.getUserById(userId);
-    if (getUserErr || !userData?.user) {
-      return { error: `Utente non trovato: ${getUserErr?.message || 'ID non valido'}` };
-    }
-    const user = userData.user;
-
-    // 2. Modifica i metadati
-    const appMetadata = { ...(user.app_metadata ?? {}) };
-    delete appMetadata.role; // Rimuove il ruolo di admin
-    appMetadata.tenant_id = "00000000-0000-0000-0000-000000000000"; // default tenant
-
-    const userMetadata = { ...(user.user_metadata ?? {}) };
-    userMetadata.tenant_id = "00000000-0000-0000-0000-000000000000";
-
-    const { error: updateAuthErr } = await adminSupabase.auth.admin.updateUserById(userId, {
-      app_metadata: appMetadata,
-      user_metadata: userMetadata
-    });
-
-    if (updateAuthErr) {
-      return { error: `Errore aggiornamento metadati auth: ${updateAuthErr.message}` };
-    }
-
-    // 3. Rimuove il ruolo admin per questo salone nella tabella tenant_customers
-    const { error: deleteMembershipErr } = await adminSupabase
+    // 1. Revoca i privilegi admin SOLO su questo salone: degradiamo l'appartenenza a 'customer'
+    // (non eliminiamo la riga, così l'utente resta cliente del salone con il suo wallet/storico).
+    const { error: downgradeErr } = await (adminSupabase as any)
       .from("tenant_customers")
-      .delete()
+      .update({ role: "customer" })
       .eq("customer_id", userId)
       .eq("tenant_id", tenantId);
+    if (downgradeErr) {
+      return { error: `Errore rimozione ruolo admin: ${downgradeErr.message}` };
+    }
 
-    if (deleteMembershipErr) {
-      return { error: `Errore rimozione ruolo admin: ${deleteMembershipErr.message}` };
+    // 2. Multi-salone: togliamo il flag generico app_metadata.role='admin' SOLO se l'utente
+    // non è più amministratore di NESSUN altro salone.
+    const { count: remainingAdminOf, error: countErr } = await (adminSupabase as any)
+      .from("tenant_customers")
+      .select("tenant_id", { count: "exact", head: true })
+      .eq("customer_id", userId)
+      .eq("role", "admin");
+
+    if (!countErr && (remainingAdminOf ?? 0) === 0) {
+      const { data: userData } = await adminSupabase.auth.admin.getUserById(userId);
+      const appMetadata = { ...(userData?.user?.app_metadata ?? {}) };
+      delete appMetadata.role; // non è più admin da nessuna parte
+      const { error: updateAuthErr } = await adminSupabase.auth.admin.updateUserById(userId, { app_metadata: appMetadata });
+      if (updateAuthErr) {
+        return { error: `Errore aggiornamento metadati auth: ${updateAuthErr.message}` };
+      }
     }
 
     revalidatePath(`/superadmin/tenants/${tenantId}`);

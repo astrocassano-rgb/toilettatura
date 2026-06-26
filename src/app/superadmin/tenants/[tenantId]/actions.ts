@@ -2,9 +2,129 @@
 
 import { redirect } from "next/navigation";
 import type { Route } from "next";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { revalidatePath } from "next/cache";
 import { requireSuperAdmin } from "@/lib/auth/require-superadmin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { addTenantDomain, removeTenantDomain } from "@/lib/vercel";
+
+const VALID_PLANS = ["LIGHT", "PRO", "ENTERPRISE"] as const;
+type Plan = (typeof VALID_PLANS)[number];
+
+/** Guard comune: autorizza il superadmin e restituisce un eventuale errore già pronto. */
+async function ensureSuperAdmin(): Promise<{ error: string } | null> {
+  try {
+    await requireSuperAdmin();
+    return null;
+  } catch (err) {
+    if (isRedirectError(err)) throw err;
+    return { error: "Non autorizzato" };
+  }
+}
+
+/**
+ * Proroga l'abbonamento di N mesi (azione operativa rapida, claude.ai).
+ * Base di calcolo: la scadenza attuale se è nel futuro, altrimenti "ora" (così prorogare un
+ * salone già scaduto riparte da oggi, non dalla vecchia data passata).
+ */
+export async function extendSubscriptionAction(tenantId: string, months: number) {
+  const unauthorized = await ensureSuperAdmin();
+  if (unauthorized) return unauthorized;
+
+  if (!tenantId || !Number.isFinite(months) || months <= 0) {
+    return { error: "Parametri di proroga non validi." };
+  }
+
+  const adminSupabase = createSupabaseAdminClient();
+  const { data: tenant } = await adminSupabase.from("tenants").select("subscription_ends_at").eq("id", tenantId).maybeSingle();
+  if (!tenant) return { error: "Salone non trovato." };
+
+  const current = tenant.subscription_ends_at ? new Date(tenant.subscription_ends_at) : null;
+  const base = current && current.getTime() > Date.now() ? current : new Date();
+  const next = new Date(base);
+  next.setMonth(next.getMonth() + Math.floor(months));
+
+  const { error } = await (adminSupabase.from("tenants") as any)
+    .update({ subscription_ends_at: next.toISOString() })
+    .eq("id", tenantId);
+  if (error) return { error: `Errore database: ${error.message}` };
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin" as Route);
+  return { success: true, message: `Abbonamento prorogato di ${months} mes${months === 1 ? "e" : "i"} (scadenza: ${next.toLocaleDateString("it-IT")}).` };
+}
+
+/**
+ * Sospende il salone impostando la scadenza a "ora" (entra subito in stato Scaduto e
+ * il middleware reindirizza i clienti a /abbonamento-scaduto). Non c'è una colonna "status"
+ * dedicata: usiamo subscription_ends_at per evitare migrazioni.
+ */
+export async function suspendTenantAction(tenantId: string) {
+  const unauthorized = await ensureSuperAdmin();
+  if (unauthorized) return unauthorized;
+  if (!tenantId) return { error: "ID salone mancante." };
+
+  const adminSupabase = createSupabaseAdminClient();
+  const { error } = await (adminSupabase.from("tenants") as any)
+    .update({ subscription_ends_at: new Date().toISOString() })
+    .eq("id", tenantId);
+  if (error) return { error: `Errore database: ${error.message}` };
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin" as Route);
+  return { success: true, message: "Salone sospeso: l'abbonamento risulta scaduto da ora." };
+}
+
+/**
+ * Riattiva un salone sospeso/scaduto prorogando di `months` mesi a partire da oggi
+ * (default 12). Per un abbonamento "senza scadenza" passare months <= 0 → azzera la scadenza.
+ */
+export async function reactivateTenantAction(tenantId: string, months = 12) {
+  const unauthorized = await ensureSuperAdmin();
+  if (unauthorized) return unauthorized;
+  if (!tenantId) return { error: "ID salone mancante." };
+
+  const adminSupabase = createSupabaseAdminClient();
+
+  let newEndsAt: string | null;
+  let label: string;
+  if (months <= 0) {
+    newEndsAt = null; // nessuna scadenza
+    label = "senza scadenza";
+  } else {
+    const next = new Date();
+    next.setMonth(next.getMonth() + Math.floor(months));
+    newEndsAt = next.toISOString();
+    label = `scadenza ${next.toLocaleDateString("it-IT")}`;
+  }
+
+  const { error } = await (adminSupabase.from("tenants") as any)
+    .update({ subscription_ends_at: newEndsAt })
+    .eq("id", tenantId);
+  if (error) return { error: `Errore database: ${error.message}` };
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin" as Route);
+  return { success: true, message: `Salone riattivato (${label}).` };
+}
+
+/** Cambia il piano commerciale del salone (LIGHT / PRO / ENTERPRISE). */
+export async function changePlanAction(tenantId: string, plan: string) {
+  const unauthorized = await ensureSuperAdmin();
+  if (unauthorized) return unauthorized;
+  if (!tenantId) return { error: "ID salone mancante." };
+  if (!VALID_PLANS.includes(plan as Plan)) {
+    return { error: "Piano non valido." };
+  }
+
+  const adminSupabase = createSupabaseAdminClient();
+  const { error } = await (adminSupabase.from("tenants") as any).update({ plan }).eq("id", tenantId);
+  if (error) return { error: `Errore database: ${error.message}` };
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin" as Route);
+  return { success: true, message: `Piano aggiornato a ${plan}.` };
+}
 
 export async function updateTenantAction(prevState: any, formData: FormData) {
   try {

@@ -5,6 +5,7 @@ import { requireSuperAdmin } from "@/lib/auth/require-superadmin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { EditTenantForm } from "./edit-tenant-form";
 import { TenantAdminsCard } from "./tenant-admins-card";
+import { TenantOperationsCard } from "./tenant-operations-card";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -32,20 +33,17 @@ export default async function EditTenantPage({ params }: Props) {
     notFound();
   }
 
-  // Recupera gli utenti auth per estrarre gli amministratori di questo tenant
-  const { data: authUsersData, error: authUsersErr } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 });
-  const authUsers = authUsersData?.users ?? [];
-  
-  if (authUsersErr) {
-    console.error("Errore nel recupero degli utenti auth:", authUsersErr.message);
-  }
+  // Amministratori del salone: fonte di verità = tenant_customers.role = 'admin' (modello multi-salone).
+  // (Prima si filtrava per app_metadata.tenant_id, che limitava un admin a un solo salone.)
+  const { data: adminMemberships } = await (adminSupabase as any)
+    .from("tenant_customers")
+    .select("customer_id")
+    .eq("tenant_id", tenantId)
+    .eq("role", "admin");
 
-  const tenantAdmins = authUsers.filter(u => 
-    u.app_metadata?.role === "admin" &&
-    (u.user_metadata?.tenant_id === tenantId || u.app_metadata?.tenant_id === tenantId)
-  );
+  const adminIds: string[] = (adminMemberships ?? []).map((m: { customer_id: string }) => m.customer_id);
 
-  const adminIds = tenantAdmins.map(a => a.id);
+  // Dettagli profilo per gli admin individuati.
   let adminProfiles: any[] = [];
   if (adminIds.length > 0) {
     const { data: profiles } = await adminSupabase
@@ -55,13 +53,21 @@ export default async function EditTenantPage({ params }: Props) {
     adminProfiles = profiles ?? [];
   }
 
-  const initialAdmins = tenantAdmins.map(u => {
-    const prof = adminProfiles.find(p => p.id === u.id);
+  // Email e dati di accesso vengono solo da auth: incrociamo con la lista utenti.
+  const { data: authUsersData, error: authUsersErr } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 });
+  if (authUsersErr) {
+    console.error("Errore nel recupero degli utenti auth:", authUsersErr.message);
+  }
+  const authById = new Map((authUsersData?.users ?? []).map((u) => [u.id, u]));
+
+  const initialAdmins = adminIds.map((id) => {
+    const prof = adminProfiles.find((p) => p.id === id);
+    const authUser = authById.get(id);
     return {
-      id: u.id,
-      email: u.email ?? "",
-      createdAt: u.created_at,
-      lastSignIn: u.last_sign_in_at ?? null,
+      id,
+      email: authUser?.email ?? "",
+      createdAt: authUser?.created_at ?? new Date(0).toISOString(),
+      lastSignIn: authUser?.last_sign_in_at ?? null,
       firstName: prof?.first_name ?? "",
       lastName: prof?.last_name ?? "",
       phone: prof?.phone ?? "",
@@ -90,6 +96,12 @@ export default async function EditTenantPage({ params }: Props) {
           </Link>
         </div>
       </header>
+
+      <TenantOperationsCard
+        tenantId={tenantId}
+        plan={tenant.plan}
+        subscriptionEndsAt={tenant.subscription_ends_at ?? null}
+      />
 
       <EditTenantForm tenant={tenant} />
 
