@@ -161,6 +161,41 @@ Correzioni applicate:
 - Valutare la migrazione a due fasi (drop di `profiles.tenant_id` in una seconda
   migrazione separata) per ridurre il rischio in produzione.
 
+## Pannello Superadmin — Control Room (2026-06-26)
+
+> Sezione curata da **claude.ai**. Evoluzione del pannello `/superadmin` da semplice
+> elenco a vera control room del network. Implementato **senza nuove tabelle/migrazioni**:
+> tutte le metriche sono aggregate lato server dalle tabelle esistenti.
+
+### Dashboard (`/superadmin/page.tsx`)
+- **6 KPI globali**: saloni registrati, clienti unici, prenotazioni, sessioni H24 attive,
+  **fatturato totale** (€, da `token_transactions` con `type='CHARGE'`) e crediti venduti.
+- **Riquadro Alert** a 3 card: abbonamenti **scaduti**, **in scadenza** (≤ 14 giorni) e
+  **saloni senza amministratore** (con liste cliccabili verso il dettaglio).
+- **Tabella "Saloni & Performance"**: per ogni salone clienti, prenotazioni, fatturato,
+  numero di admin (evidenziato in rosso se 0) e stato abbonamento.
+
+### Gestione amministratori multi-salone
+- Fonte di verità del ruolo admin: **`tenant_customers.role = 'admin'`** → una persona può
+  amministrare **più saloni** (prima `app_metadata.tenant_id` la confinava a uno solo).
+- `app_metadata.role = 'admin'` resta solo flag generico per il redirect post-login.
+- Rimozione admin (`removeTenantAdminAction`): degrada l'appartenenza a `customer` su quel
+  salone e toglie il flag globale **solo se** l'utente non è admin di nessun altro salone.
+- Il dettaglio salone elenca gli admin leggendo da `tenant_customers`.
+
+### Azioni operative sul salone (`tenant-operations-card.tsx`)
+Nel dettaglio salone, azioni rapide con feedback toast e refresh automatico:
+- **Proroga abbonamento** +1 / +3 / +12 mesi (riparte da oggi se già scaduto);
+- **Sospendi** (scadenza = ora) / **Riattiva** (+12 mesi);
+- **Cambia piano** LIGHT / PRO / ENTERPRISE.
+Server action in `src/app/superadmin/tenants/[tenantId]/actions.ts`; agiscono su
+`subscription_ends_at` / `plan` (nessuna colonna "status" dedicata, quindi nessuna migrazione).
+
+### File chiave
+- `src/lib/admin/metrics.ts` — helper `getNetworkOverview()` (server-only, service-role).
+- `src/app/superadmin/page.tsx` — dashboard.
+- `src/app/superadmin/tenants/[tenantId]/{page,actions,admin-actions}.ts(x)` + `tenant-operations-card.tsx`.
+
 ## Stack tecnico
 
 - Next.js 15 con App Router
