@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireSuperAdmin } from "@/lib/auth/require-superadmin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { EditTenantForm } from "./edit-tenant-form";
+import { TenantAdminsCard } from "./tenant-admins-card";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -31,6 +32,42 @@ export default async function EditTenantPage({ params }: Props) {
     notFound();
   }
 
+  // Recupera gli utenti auth per estrarre gli amministratori di questo tenant
+  const { data: authUsersData, error: authUsersErr } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 });
+  const authUsers = authUsersData?.users ?? [];
+  
+  if (authUsersErr) {
+    console.error("Errore nel recupero degli utenti auth:", authUsersErr.message);
+  }
+
+  const tenantAdmins = authUsers.filter(u => 
+    u.app_metadata?.role === "admin" &&
+    (u.user_metadata?.tenant_id === tenantId || u.app_metadata?.tenant_id === tenantId)
+  );
+
+  const adminIds = tenantAdmins.map(a => a.id);
+  let adminProfiles: any[] = [];
+  if (adminIds.length > 0) {
+    const { data: profiles } = await adminSupabase
+      .from("profiles")
+      .select("id, first_name, last_name, phone")
+      .in("id", adminIds);
+    adminProfiles = profiles ?? [];
+  }
+
+  const initialAdmins = tenantAdmins.map(u => {
+    const prof = adminProfiles.find(p => p.id === u.id);
+    return {
+      id: u.id,
+      email: u.email ?? "",
+      createdAt: u.created_at,
+      lastSignIn: u.last_sign_in_at ?? null,
+      firstName: prof?.first_name ?? "",
+      lastName: prof?.last_name ?? "",
+      phone: prof?.phone ?? "",
+    };
+  });
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -55,6 +92,9 @@ export default async function EditTenantPage({ params }: Props) {
       </header>
 
       <EditTenantForm tenant={tenant} />
+
+      <TenantAdminsCard tenantId={tenantId} initialAdmins={initialAdmins} />
     </div>
   );
 }
+

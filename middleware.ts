@@ -20,7 +20,10 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // --- CONTROLLO SCADENZA ABBONAMENTO (TENANT EXPIRED CHECK) ---
+  const { data: { user } } = await supabase.auth.getUser();
+  const pathname = request.nextUrl.pathname;
+
+  // --- CONTROLLO SCADENZA E ISOLAMENTO TENANT (SUBDOMAIN CHECKS) ---
   const host = request.headers.get("host") || "";
   const domainParts = host.split(".");
   let subdomain = "";
@@ -44,50 +47,110 @@ export async function middleware(request: NextRequest) {
   }
 
   if (subdomain && subdomain !== "default") {
-    const pathname = request.nextUrl.pathname;
-    
-    // Escludiamo API, static files, auth callback
+    // Escludiamo API, static files, auth callback, e le pagine di errore stesse
     const isPageRequest = !pathname.startsWith("/api") &&
                           !pathname.startsWith("/_next") &&
                           !pathname.startsWith("/auth") &&
+                          pathname !== "/salone-errato" &&
+                          pathname !== "/abbonamento-scaduto" &&
                           !pathname.includes(".");
 
     if (isPageRequest) {
       try {
         const { data: tenant } = await (supabase.from("tenants") as any)
-          .select("subscription_ends_at")
+          .select("id, name, slug, subscription_ends_at")
           .eq("slug", subdomain)
           .maybeSingle();
 
         if (tenant) {
+          // 1. Verifica Scadenza
           const isExpired = tenant.subscription_ends_at
             ? new Date(tenant.subscription_ends_at) < new Date()
             : false;
 
           if (isExpired) {
-            if (pathname !== "/abbonamento-scaduto") {
-              const expiredUrl = request.nextUrl.clone();
-              expiredUrl.pathname = "/abbonamento-scaduto";
-              expiredUrl.search = "";
-              return NextResponse.redirect(expiredUrl);
-            }
-          } else {
-            if (pathname === "/abbonamento-scaduto") {
-              const homeUrl = request.nextUrl.clone();
-              homeUrl.pathname = "/";
-              homeUrl.search = "";
-              return NextResponse.redirect(homeUrl);
+            const expiredUrl = request.nextUrl.clone();
+            expiredUrl.pathname = "/abbonamento-scaduto";
+            expiredUrl.search = "";
+            return NextResponse.redirect(expiredUrl);
+          }
+
+          // 2. Verifica Mismatch del Tenant (Isolamento Account)
+          if (user) {
+            const role = (user as any)?.app_metadata?.role;
+            const isSuperAdmin = role === "superadmin";
+
+            if (!isSuperAdmin) {
+              const { data: userProfile } = await (supabase.from("profiles") as any)
+                .select("tenant_id")
+                .eq("id", user.id)
+                .maybeSingle();
+
+              if (userProfile && userProfile.tenant_id !== tenant.id) {
+                const errorUrl = request.nextUrl.clone();
+                errorUrl.pathname = "/salone-errato";
+                errorUrl.searchParams.set("from", tenant.name);
+
+                // Recuperiamo anche il nome del salone a cui appartiene l'utente per mostrarlo nella pagina di errore
+                const { data: belongsToTenant } = await (supabase.from("tenants") as any)
+                  .select("name, slug")
+                  .eq("id", userProfile.tenant_id)
+                  .maybeSingle();
+                if (belongsToTenant) {
+                  errorUrl.searchParams.set("belongsTo", belongsToTenant.name);
+                  errorUrl.searchParams.set("belongsToSlug", belongsToTenant.slug);
+                }
+                return NextResponse.redirect(errorUrl);
+              }
             }
           }
         }
       } catch (err) {
-        console.error("[Middleware] Errore verifica scadenza tenant:", err);
+        console.error("[Middleware] Errore verifica tenant/scadenza:", err);
       }
     }
   }
-  // -------------------------------------------------------------
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Se l'utente non è loggato ma prova ad andare su /salone-errato, lo mandiamo al login
+  if (pathname === "/salone-errato" && !user) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.search = "";
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Se l'utente è loggato su /salone-errato, verifichiamo se il tenant ora corrisponde per rimandarlo alla home
+  if (pathname === "/salone-errato" && user) {
+    try {
+      const role = (user as any)?.app_metadata?.role;
+      if (role === "superadmin") {
+        const homeUrl = request.nextUrl.clone();
+        homeUrl.pathname = "/";
+        homeUrl.search = "";
+        return NextResponse.redirect(homeUrl);
+      }
+
+      const { data: userProfile } = await (supabase.from("profiles") as any)
+        .select("tenant_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (userProfile && subdomain) {
+        const { data: tenant } = await (supabase.from("tenants") as any)
+          .select("id")
+          .eq("slug", subdomain)
+          .maybeSingle();
+        if (tenant && userProfile.tenant_id === tenant.id) {
+          const homeUrl = request.nextUrl.clone();
+          homeUrl.pathname = "/";
+          homeUrl.search = "";
+          return NextResponse.redirect(homeUrl);
+        }
+      }
+    } catch (err) {
+      console.error("[Middleware] Errore verifica reindirizzamento /salone-errato:", err);
+    }
+  }
 
   const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
 
