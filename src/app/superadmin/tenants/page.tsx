@@ -92,7 +92,25 @@ export default async function SuperAdminTenantsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-4 font-mono text-xs text-slate-400">
-                        {tenant.slug}.dogwash24.it
+                        {tenant.slug === "default" ? (
+                          <a
+                            href="https://app.dogwash24.it"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-violet-400 hover:text-violet-300 hover:underline transition-all"
+                          >
+                            app.dogwash24.it
+                          </a>
+                        ) : (
+                          <a
+                            href={`https://${tenant.slug}.app.dogwash24.it`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-violet-400 hover:text-violet-300 hover:underline transition-all"
+                          >
+                            {tenant.slug}.app.dogwash24.it
+                          </a>
+                        )}
                       </td>
                       <td className="px-4 py-4">
                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${

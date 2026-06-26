@@ -108,7 +108,15 @@ export function NewTenantForm() {
             </div>
             {slug && (
               <p className="text-[11px] text-slate-500">
-                Indirizzo web: <span className="font-mono text-violet-400 font-semibold">{slug}.dogwash24.it</span>
+                {"Indirizzo web: "}
+                <a
+                  href={`https://${slug}.app.dogwash24.it`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-violet-400 hover:text-violet-300 font-semibold underline decoration-violet-500/30 hover:decoration-violet-500/70 transition-all"
+                >
+                  {slug}.app.dogwash24.it
+                </a>
               </p>
             )}
           </div>
