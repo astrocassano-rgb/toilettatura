@@ -4,6 +4,7 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { requireSuperAdmin } from "@/lib/auth/require-superadmin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 /**
  * Gestione amministratori di salone — modello MULTI-SALONE (claude.ai).
@@ -77,8 +78,15 @@ export async function addTenantAdminAction(tenantId: string, email: string) {
     } else {
       // 2. L'utente non esiste: invito via email. `data.tenant_id` serve a handle_new_user per
       // collegare il salone di registrazione; il ruolo admin lo forziamo subito sotto in tenant_customers.
+      const headersList = await headers();
+      const host = headersList.get("host") || "app.dogwash24.it";
+      const protocol = host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https";
+      const origin = `${protocol}://${host}`;
+      const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent("/reset-password")}`;
+
       const { data: inviteData, error: inviteErr } = await adminSupabase.auth.admin.inviteUserByEmail(cleanEmail, {
         data: { tenant_id: tenantId },
+        redirectTo,
       });
       if (inviteErr) {
         return { error: `Errore durante l'invio dell'invito: ${inviteErr.message}` };
