@@ -20,6 +20,13 @@ import {
   AlertTriangle,
   Clock,
   Settings,
+  BookOpen,
+  CheckCircle2,
+  ChevronDown,
+  Mail,
+  Wrench,
+  ToggleRight,
+  RefreshCw,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -256,6 +263,9 @@ export default async function SuperAdminDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Guida Operativa Permanente */}
+        <OperativeGuide />
       </div>
     );
   } catch (err: any) {
@@ -338,5 +348,126 @@ function AlertCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Guida operativa permanente per il Superadmin.
+ * Spiega step-by-step come aprire un nuovo salone e gestire gli abbonamenti.
+ * Implementata con <details>/<summary> HTML nativo: zero JS aggiuntivo.
+ */
+function OperativeGuide() {
+  const steps = [
+    {
+      n: 1,
+      title: "Crea il salone",
+      body: 'Vai su "/superadmin/tenants/new" (pulsante "Aggiungi Salone" in alto a destra). Inserisci nome, slug (sottodominio), piano commerciale e scadenza abbonamento. Lo slug diventa l\'indirizzo web: es. paw-spa → paw-spa.app.dogwash24.it.',
+    },
+    {
+      n: 2,
+      title: "Sottodominio creato automaticamente",
+      body: "Il sistema aggiunge il sottodominio su Vercel via API in automatico. Non serve nessuna azione manuale su DNS o Vercel. Se fallisce silenziosamente, lo slug è comunque creato nel DB e il dominio può essere aggiunto a mano dal pannello Vercel.",
+    },
+    {
+      n: 3,
+      title: "Assegna un amministratore al salone",
+      body: 'Apri la scheda del salone appena creato (pulsante "Gestisci" nella tabella) e cerca la sezione "Amministratori". Inserisci l\'email del proprietario/gestore e clicca "Aggiungi Admin".',
+    },
+    {
+      n: 4,
+      title: "Invito email automatico (se utente non esiste)",
+      body: "Se l'email non corrisponde a nessun account esistente, il sistema invia un invito automatico. L'utente riceve una mail e al primo accesso il suo profilo viene creato con ruolo admin su quel salone. Se l'utente esiste già, viene promosso admin immediatamente.",
+    },
+    {
+      n: 5,
+      title: "L'admin configura postazioni e servizi",
+      body: "Una volta che l'admin accede al suo salone, configura postazioni, servizi, prezzi e orari dalla sua dashboard. Tu come superadmin non devi fare nulla in questa fase — è responsabilità del gestore del salone.",
+    },
+    {
+      n: 6,
+      title: "Verifica stato nella tabella saloni",
+      body: 'Torna a questa dashboard. Il salone deve apparire con stato "Attivo" e almeno 1 admin (colonna Admin non in rosso). Se Admin = 0 appare un alert rosso — agisci subito assegnando un admin.',
+    },
+  ] as const;
+
+  const subscriptionActions = [
+    { label: "Proroga abbonamento", desc: "+1 / +3 / +12 mesi. Riparte da oggi se già scaduto." },
+    { label: "Sospendi salone", desc: "Imposta scadenza = ora. Il salone diventa inaccessibile ai clienti." },
+    { label: "Riattiva salone", desc: "Aggiunge +12 mesi dalla data odierna." },
+    { label: "Cambia piano", desc: "LIGHT (max 100 prenotazioni/mese) → PRO → ENTERPRISE." },
+  ];
+
+  return (
+    <details className="group">
+      <summary className="flex cursor-pointer list-none items-center justify-between rounded-2xl border border-violet-500/20 bg-violet-950/10 px-5 py-4 backdrop-blur-md transition-all hover:border-violet-500/40 hover:bg-violet-950/20">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-violet-500/15 p-2.5 text-violet-300">
+            <BookOpen className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-100">Guida Operativa Superadmin</p>
+            <p className="text-[11px] text-slate-400">Come aprire un nuovo salone · Gestione abbonamenti · Riferimento rapido</p>
+          </div>
+        </div>
+        <ChevronDown className="h-4 w-4 text-slate-400 transition-transform duration-300 group-open:rotate-180" />
+      </summary>
+
+      <div className="mt-3 space-y-5 rounded-2xl border border-slate-800/60 bg-slate-950/40 p-5 backdrop-blur-md">
+
+        {/* Step: nuovo salone */}
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-violet-400">Come aprire un nuovo salone — step by step</p>
+          <div className="space-y-3">
+            {steps.map((s) => (
+              <div key={s.n} className="flex gap-3 rounded-xl border border-slate-800/60 bg-slate-900/30 p-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-xs font-bold text-violet-300">
+                  {s.n}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-100">{s.title}</p>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400">{s.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <hr className="border-slate-800" />
+
+        {/* Gestione abbonamenti */}
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-violet-400">Gestione abbonamenti — azioni disponibili</p>
+          <p className="mb-3 text-[11px] text-slate-400">
+            Tutte le azioni si trovano nella <strong className="text-slate-200">scheda del salone</strong>{" "}
+            (pulsante &quot;Gestisci&quot; nella tabella in alto) → sezione{" "}
+            <strong className="text-slate-200">Operazioni</strong>.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {subscriptionActions.map((a) => (
+              <div key={a.label} className="flex gap-2.5 rounded-xl border border-slate-800/60 bg-slate-900/30 p-3">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
+                <div>
+                  <p className="text-xs font-semibold text-slate-100">{a.label}</p>
+                  <p className="text-[11px] text-slate-400">{a.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <hr className="border-slate-800" />
+
+        {/* Alert stato */}
+        <div className="rounded-xl border border-amber-500/20 bg-amber-950/10 p-3">
+          <p className="text-xs font-semibold text-amber-300">⚠️ Segnali da monitorare sempre</p>
+          <ul className="mt-2 space-y-1 text-[11px] text-slate-400">
+            <li>🔴 <strong className="text-slate-200">Admin = 0</strong> nella tabella → il salone non ha un gestore: assegna subito un admin.</li>
+            <li>🔴 <strong className="text-slate-200">Abbonamento scaduto</strong> → il salone è inaccessibile ai clienti: proroga o riattiva.</li>
+            <li>🟡 <strong className="text-slate-200">In scadenza ≤ 14 giorni</strong> → contatta il gestore per il rinnovo.</li>
+          </ul>
+        </div>
+
+      </div>
+    </details>
   );
 }
