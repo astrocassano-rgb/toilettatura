@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { BarChart3, Clock, QrCode, ShieldCheck, Wrench, Sparkles, type LucideIcon } from "lucide-react";
@@ -12,43 +12,23 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DogWash24 — Piattaforma Toilettatura Ibrida",
     description:
-      "Prenotazioni, wallet crediti, dashboard admin e flessibilità operativa: lavaggi self-service H24 e servizi assistiti.",
+      "Prenotazioni, wallet crediti, dashboard admin e flessibilita operativa: lavaggi self-service H24 e servizi assistiti.",
     type: "website"
   }
 };
 
 const features: { title: string; description: string; Icon: LucideIcon }[] = [
-  {
-    title: "Flessibilità Ibrida (Self & Staff)",
-    description: "Gestisci postazioni libere in modalità self-service H24 e l'agenda degli operatori per lavaggi assistiti.",
-    Icon: Sparkles
-  },
-  {
-    title: "Operatività H24 (QR + Kiosk)",
-    description: "Check-in con QR firmato, kiosk postazione e sessioni live con timer: controllo operativo in struttura.",
-    Icon: QrCode
-  },
-  {
-    title: "Prenotazioni reali e anti-overbooking",
-    description: "Disponibilità su DB con logica server-side: meno disguidi, meno contestazioni, più ordine.",
-    Icon: Clock
-  },
-  {
-    title: "Wallet crediti e report economici",
-    description: "Saldo crediti, movimenti e dashboard admin con filtri ed export: tracciabilità e controllo.",
-    Icon: BarChart3
-  },
-  {
-    title: "Sicurezza e audit",
-    description: "Auth reale, RLS, policy su operazioni sensibili e tracciabilità: base solida per crescere.",
-    Icon: ShieldCheck
-  },
-  {
-    title: "Postazioni e gestione struttura",
-    description: "Anagrafica postazioni e layout editor per la mappa: visione chiara del punto vendita.",
-    Icon: Wrench
-  }
+  { title: "Flessibilita Ibrida (Self & Staff)", description: "Gestisci postazioni libere in modalita self-service H24 e l'agenda degli operatori per lavaggi assistiti.", Icon: Sparkles },
+  { title: "Operativita H24 (QR + Kiosk)", description: "Check-in con QR firmato, kiosk postazione e sessioni live con timer: controllo operativo in struttura.", Icon: QrCode },
+  { title: "Prenotazioni reali e anti-overbooking", description: "Disponibilita su DB con logica server-side: meno disguidi, meno contestazioni, piu ordine.", Icon: Clock },
+  { title: "Wallet crediti e report economici", description: "Saldo crediti, movimenti e dashboard admin con filtri ed export: tracciabilita e controllo.", Icon: BarChart3 },
+  { title: "Sicurezza e audit", description: "Auth reale, RLS, policy su operazioni sensibili e tracciabilita: base solida per crescere.", Icon: ShieldCheck },
+  { title: "Postazioni e gestione struttura", description: "Anagrafica postazioni e layout editor per la mappa: visione chiara del punto vendita.", Icon: Wrench }
 ];
+
+const startFeatures = ["Prenotazioni online illimitate","Wallet crediti clienti","App mobile per i clienti","Dashboard admin","Check-in QR (H24 self-service)","Aggiornamenti inclusi","Supporto in italiano"];
+const proFeatures = ["Tutto del piano Licenza","Aggiornamenti gestiti","Supporto prioritario","Governance release","Onboarding dedicato","SLA garantito","Multi-salone"];
+const enterpriseFeatures = ["Codice sorgente completo","Handover tecnico","Documentazione architettura","Formazione team","Personalizzazione brand","Diritti di proprieta"];
 
 export default function PiattaformaPage() {
   return (
@@ -64,14 +44,10 @@ export default function PiattaformaPage() {
         </p>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link href="/prenota" className="w-full sm:w-auto">
-            <Button className="w-full" variant="primary">
-              Vedi demo prenotazione
-            </Button>
+            <Button className="w-full" variant="primary">Vedi demo prenotazione</Button>
           </Link>
           <a className="w-full sm:w-auto" href="mailto:info@dogwash24.it?subject=Richiesta%20demo%20DogWash24">
-            <Button className="w-full" variant="secondary">
-              Richiedi una demo
-            </Button>
+            <Button className="w-full" variant="secondary">Richiedi una demo</Button>
           </a>
         </div>
       </section>
@@ -79,7 +55,7 @@ export default function PiattaformaPage() {
       <section className="grid gap-3 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="space-y-1">
-            <p className="text-xs font-medium text-slate-300">Perché</p>
+            <p className="text-xs font-medium text-slate-300">Perche</p>
             <p className="text-lg font-semibold tracking-tight">Riduci caos operativo, aumenta controllo</p>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-slate-300">
@@ -88,7 +64,7 @@ export default function PiattaformaPage() {
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="rounded-3xl bg-slate-950/40 p-4 ring-1 ring-inset ring-slate-800">
-                <p className="text-sm font-semibold text-slate-50">Flessibilità Ibrida</p>
+                <p className="text-sm font-semibold text-slate-50">Flessibilita Ibrida</p>
                 <p className="mt-1 text-xs text-slate-400">Configura le postazioni per il self-service, l&apos;assistenza staff o entrambi.</p>
               </div>
               <div className="rounded-3xl bg-slate-950/40 p-4 ring-1 ring-inset ring-slate-800">
@@ -107,7 +83,7 @@ export default function PiattaformaPage() {
           <CardContent className="space-y-2 text-sm text-slate-300">
             <p>Webapp mobile-first per i clienti, dashboard admin per lo staff e pagina Kiosk di check-in per il locale.</p>
             <p className="text-xs text-slate-400">
-              Pronta per l&apos;integrazione hardware (relè): sblocco porte e avvio vasca automatico post check-in QR.
+              Pronta per l&apos;integrazione hardware (rele): sblocco porte e avvio vasca automatico post check-in QR.
             </p>
           </CardContent>
         </Card>
@@ -115,7 +91,7 @@ export default function PiattaformaPage() {
 
       <section className="space-y-4">
         <header className="space-y-1">
-          <p className="text-xs font-medium text-slate-300">Funzionalità</p>
+          <p className="text-xs font-medium text-slate-300">Funzionalita</p>
           <h2 className="text-xl font-semibold tracking-tight">Cosa include oggi</h2>
         </header>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -141,57 +117,93 @@ export default function PiattaformaPage() {
         <header className="space-y-1">
           <p className="text-xs font-medium text-slate-300">Pacchetti</p>
           <h2 className="text-xl font-semibold tracking-tight">Modelli di utilizzo</h2>
-          <p className="text-sm text-slate-300">Valori indicativi: si definiscono su numero postazioni e perimetro.</p>
+          <p className="text-sm text-slate-300">Prezzi per salone singolo. Soluzioni multi-impianto e distributori su richiesta.</p>
         </header>
         <div className="grid gap-3 lg:grid-cols-3">
+
+          {/* Piano START */}
           <Card>
             <CardHeader className="space-y-1">
-              <p className="text-xs font-medium text-slate-300">Solo utilizzo</p>
+              <p className="text-xs font-medium text-slate-300">Per iniziare</p>
               <p className="text-lg font-semibold tracking-tight">Licenza d&apos;uso</p>
+              <p className="text-2xl font-semibold tracking-tight text-slate-50">29€<span className="text-base font-normal text-slate-400">/mese</span></p>
+              <p className="text-[11px] text-slate-500">Early adopter · Garantito 2 anni · Poi 59€/mese</p>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-slate-300">
-              <p className="text-2xl font-semibold tracking-tight text-slate-50">da 150 €/mese</p>
-              <p>Uso piattaforma + aggiornamenti finché attivo il canone.</p>
-              <p className="text-xs text-slate-400">Setup iniziale una tantum e assistenza base inclusa nel canone.</p>
+              <ul className="space-y-1.5">
+                {startFeatures.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-xs">
+                    <span className="text-teal-400">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="mailto:info@dogwash24.it?subject=Prova%20gratuita%2030%20giorni%20—%20DogWash24&body=Buongiorno%2C%20vorrei%20iniziare%20la%20prova%20gratuita%20di%2030%20giorni.%0A%0ANome%20salone%3A%20%0ACittà%3A%20%0ATelefono%3A%20"
+                className="mt-3 block w-full rounded-xl border border-slate-700 py-2.5 text-center text-sm font-semibold text-slate-200 transition-all hover:border-slate-500 hover:bg-slate-800/60"
+              >
+                Inizia gratis 30 giorni →
+              </a>
             </CardContent>
           </Card>
+
+          {/* Piano PRO */}
           <Card className="border-blue-500/20 bg-blue-950/10">
             <CardHeader className="space-y-1">
-              <p className="text-xs font-medium text-blue-200">Consigliato</p>
+              <p className="text-xs font-medium text-blue-200">⭐ Consigliato</p>
               <p className="text-lg font-semibold tracking-tight text-slate-50">Noleggio + update</p>
+              <p className="text-2xl font-semibold tracking-tight text-slate-50">119€<span className="text-base font-normal text-slate-400">/mese</span></p>
+              <p className="text-[11px] text-slate-500">Setup incluso · Zero pensieri · SLA garantito</p>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-slate-300">
-              <p className="text-2xl font-semibold tracking-tight text-slate-50">da 300 €/mese</p>
-              <p>Gestione aggiornamenti, supporto e governance release.</p>
-              <p className="text-xs text-slate-400">Ideale se vuoi “zero pensieri” e un servizio continuativo.</p>
+              <ul className="space-y-1.5">
+                {proFeatures.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-xs">
+                    <span className="text-blue-400">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="mailto:info@dogwash24.it?subject=Richiesta%20offerta%20Noleggio%20%2B%20Update%20DogWash24"
+                className="mt-3 block w-full rounded-xl bg-blue-600 py-2.5 text-center text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500"
+              >
+                Scegli questo →
+              </a>
             </CardContent>
           </Card>
+
+          {/* Piano Enterprise */}
           <Card>
             <CardHeader className="space-y-1">
-              <p className="text-xs font-medium text-slate-300">Acquisto</p>
+              <p className="text-xs font-medium text-slate-300">Acquisto IP</p>
               <p className="text-lg font-semibold tracking-tight">Piattaforma completa</p>
+              <p className="text-2xl font-semibold tracking-tight text-slate-50">35k–120k€</p>
+              <p className="text-[11px] text-slate-500">Una tantum · variabile per esclusiva</p>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-slate-300">
-              <p className="text-2xl font-semibold tracking-tight text-slate-50">35k–120k €</p>
-              <p>Acquisto IP/sorgenti + handover tecnico.</p>
-              <p className="text-xs text-slate-400">Possibile esclusiva con valore dedicato.</p>
+              <ul className="space-y-1.5">
+                {enterpriseFeatures.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-xs">
+                    <span className="text-violet-400">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="mailto:info@dogwash24.it?subject=Richiesta%20preventivo%20Piattaforma%20completa%20DogWash24"
+                className="mt-3 block w-full rounded-xl border border-slate-700 py-2.5 text-center text-sm font-semibold text-slate-200 transition-all hover:border-slate-500 hover:bg-slate-800/60"
+              >
+                Richiedi preventivo →
+              </a>
             </CardContent>
           </Card>
+
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <a className="w-full sm:w-auto" href="mailto:info@dogwash24.it?subject=Richiesta%20offerta%20DogWash24&body=Buongiorno%2C%20vorrei%20una%20proposta%20per%20la%20piattaforma%20DogWash24.%0A%0AImpianto%3A%20%0APostazioni%3A%20%0ANote%3A%20">
-            <Button className="w-full" variant="primary">
-              Richiedi un&apos;offerta
-            </Button>
+        <p className="text-center text-xs text-slate-500">
+          Sei un toelettatore in Puglia?{" "}
+          <a href="/toelettatori" className="text-teal-400 hover:underline">
+            Scopri l&apos;offerta riservata ai saloni →
           </a>
-          <Link href="/login" className="w-full sm:w-auto">
-            <Button className="w-full" variant="secondary">
-              Accedi (area demo)
-            </Button>
-          </Link>
-        </div>
+        </p>
       </section>
     </div>
   );
 }
-
