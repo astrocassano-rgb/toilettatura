@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import LeadRowActions from "./lead-row-actions";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { requireSuperAdmin } from "@/lib/auth/require-superadmin";
@@ -42,6 +43,20 @@ export default async function SuperAdminDashboard() {
     const adminSupabase = createSupabaseAdminClient();
     const overview = await getNetworkOverview(adminSupabase);
     const { totals, alerts, tenants } = overview;
+
+    // Recupera i lead dal sito
+    let leads: any[] = [];
+    try {
+      const { data: leadsData, error: leadsErr } = await (adminSupabase as any)
+        .from("marketing_leads")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!leadsErr && leadsData) {
+        leads = leadsData;
+      }
+    } catch (leadsCatch) {
+      console.warn("Tabella marketing_leads non ancora pronta nel database:", leadsCatch);
+    }
 
     const kpis = [
       { label: "Saloni Registrati", value: num.format(totals.tenants), sub: `${totals.activeTenants} con abbonamento attivo`, Icon: Building, tone: "violet" },
@@ -256,6 +271,94 @@ export default async function SuperAdminDashboard() {
                   {tenants.length === 0 && (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-sm text-slate-500">Nessun salone registrato al momento.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Nuove Richieste Contatto / Lead */}
+        <Card className="border-slate-800 bg-slate-900/20 backdrop-blur-md">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-teal-400">
+                <Mail className="h-4 w-4" />
+                <span className="text-xs font-semibold uppercase tracking-widest">Richieste dal Sito</span>
+              </div>
+              <p className="text-lg font-bold tracking-tight">Richieste Contatto & Lead</p>
+              <p className="text-xs text-slate-400">Utenti e toelettatori che hanno richiesto informazioni o attivato la prova di 30 giorni.</p>
+            </div>
+            <div className="flex h-8 items-center rounded-lg bg-teal-500/10 border border-teal-500/25 px-2.5 text-xs font-semibold text-teal-300">
+              {leads.filter(l => l.status === 'new').length} Nuovi
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800/80 text-slate-400">
+                    <th className="py-3 px-4 font-semibold">Data</th>
+                    <th className="py-3 px-4 font-semibold">Referente / Salone</th>
+                    <th className="py-3 px-4 font-semibold">Contatti</th>
+                    <th className="py-3 px-4 font-semibold">Città</th>
+                    <th className="py-3 px-4 font-semibold">Piano</th>
+                    <th className="py-3 px-4 font-semibold">Note</th>
+                    <th className="py-3 px-4 font-semibold">Stato</th>
+                    <th className="py-3 px-4 font-semibold text-right">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {leads.map((lead) => (
+                    <tr key={lead.id} className="group transition-colors hover:bg-slate-900/20">
+                      <td className="py-3.5 px-4 font-mono text-[10px] text-slate-500">
+                        {new Date(lead.created_at).toLocaleDateString("it-IT", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <p className="font-semibold text-slate-100">{lead.name}</p>
+                        {lead.salon_name && <p className="text-[10px] text-slate-400">{lead.salon_name}</p>}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <p className="text-slate-300">{lead.email}</p>
+                        <p className="text-[10px] text-slate-400">{lead.phone}</p>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-300">{lead.city || "—"}</td>
+                      <td className="py-3.5 px-4">
+                        <span className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                          lead.plan_interest === 'PRO' ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20' :
+                          lead.plan_interest === 'ENTERPRISE' ? 'bg-violet-500/10 text-violet-300 border border-violet-500/20' :
+                          'bg-teal-500/10 text-teal-300 border border-teal-500/20'
+                        }`}>
+                          {lead.plan_interest || 'START'}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 max-w-xs truncate text-slate-400" title={lead.notes}>
+                        {lead.notes || "—"}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          lead.status === 'new' ? 'bg-teal-500/15 text-teal-300 ring-1 ring-inset ring-teal-500/25' :
+                          lead.status === 'contacted' ? 'bg-blue-500/15 text-blue-300 ring-1 ring-inset ring-blue-500/25' :
+                          'bg-slate-700/30 text-slate-400 ring-1 ring-inset ring-slate-700/20'
+                        }`}>
+                          {lead.status === 'new' ? 'Nuovo' : lead.status === 'contacted' ? 'Contattato' : 'Gestito'}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <LeadRowActions leadId={lead.id} status={lead.status} />
+                      </td>
+                    </tr>
+                  ))}
+                  {leads.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-sm text-slate-500">Nessuna richiesta di contatto ricevuta.</td>
                     </tr>
                   )}
                 </tbody>

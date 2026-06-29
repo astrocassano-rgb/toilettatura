@@ -1,4 +1,5 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
+import Link from "next/link";
 import {
   CheckCircle2,
   XCircle,
@@ -72,9 +73,6 @@ const testimonials = [
   { name: "Laura M.", role: "Salone di Toelettatura, Taranto", text: "Ho aggiunto una postazione H24 e adesso guadagno anche la domenica. Impensabile prima.", stars: 5 },
 ];
 
-const MAIL_TRIAL = "mailto:info@dogwash24.it?subject=Prova%20gratuita%2030%20giorni%20%E2%80%94%20DogWash24&body=Buongiorno%2C%20vorrei%20iniziare%20la%20prova%20gratuita%20di%2030%20giorni.%0A%0ANome%20salone%3A%20%0ACitt%C3%A0%3A%20%0ATelefono%3A%20";
-const MAIL_DEMO = "mailto:info@dogwash24.it?subject=Richiesta%20demo%20DogWash24&body=Buongiorno%2C%20vorrei%20una%20demo%20guidata.%0A%0ANome%20salone%3A%20%0ACitt%C3%A0%3A%20%0ATelefono%3A%20";
-
 export default function ToelettatorePage() {
   return (
     <div className="min-h-dvh bg-slate-950 text-slate-50">
@@ -100,12 +98,12 @@ export default function ToelettatorePage() {
             DogWash24 elimina i no-show, digitalizza i pagamenti e trasforma il tuo salone in un impianto H24 self-service.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <a href={MAIL_TRIAL} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-500 px-7 py-4 text-sm font-bold text-slate-950 shadow-lg shadow-teal-500/20 transition-all hover:bg-teal-400">
+            <Link href="/richiedi-info?plan=START" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-500 px-7 py-4 text-sm font-bold text-slate-950 shadow-lg shadow-teal-500/20 transition-all hover:bg-teal-400">
               Inizia gratis per 30 giorni <ArrowRight className="h-4 w-4" />
-            </a>
-            <a href={MAIL_DEMO} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/60 px-7 py-4 text-sm font-semibold text-slate-200 backdrop-blur-sm transition-all hover:border-slate-600">
+            </Link>
+            <Link href="/richiedi-info?plan=START" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/60 px-7 py-4 text-sm font-semibold text-slate-200 backdrop-blur-sm transition-all hover:border-slate-600">
               Parla con noi prima
-            </a>
+            </Link>
           </div>
           <p className="mt-4 text-xs text-slate-500">Nessuna carta richiesta · Attivazione in 24h · Supporto in italiano</p>
         </div>
@@ -214,9 +212,9 @@ export default function ToelettatorePage() {
                 </li>
               ))}
             </ul>
-            <a href={MAIL_TRIAL} className="mt-7 flex items-center justify-center gap-2 rounded-2xl bg-teal-500 py-4 text-sm font-bold text-slate-950 shadow-lg shadow-teal-500/20 transition-all hover:bg-teal-400">
+            <Link href="/richiedi-info?plan=START" className="mt-7 flex items-center justify-center gap-2 rounded-2xl bg-teal-500 py-4 text-sm font-bold text-slate-950 shadow-lg shadow-teal-500/20 transition-all hover:bg-teal-400">
               Inizia gratis — 30 giorni <ArrowRight className="h-4 w-4" />
-            </a>
+            </Link>
             <p className="mt-3 text-center text-[11px] text-slate-500">Nessuna carta · Attivazione in 24h · Disdici quando vuoi</p>
           </div>
           <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-500">
@@ -257,9 +255,9 @@ export default function ToelettatorePage() {
         <div className="mx-auto max-w-xl text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Pronto a modernizzare il tuo salone?</h2>
           <p className="mt-4 text-slate-300">30 giorni gratis, nessuna carta, supporto in italiano. Attivazione in 24 ore.</p>
-          <a href={MAIL_TRIAL} className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-8 py-4 text-base font-bold text-slate-950 shadow-xl shadow-teal-500/20 transition-all hover:bg-teal-400">
+          <Link href="/richiedi-info?plan=START" className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-teal-500 px-8 py-4 text-base font-bold text-slate-950 shadow-xl shadow-teal-500/20 transition-all hover:bg-teal-400">
             Inizia gratis per 30 giorni <ArrowRight className="h-5 w-5" />
-          </a>
+          </Link>
           <p className="mt-4 text-xs text-slate-500">
             Hai domande?{" "}
             <a href="mailto:info@dogwash24.it" className="text-teal-400 hover:underline">Scrivici a info@dogwash24.it</a>

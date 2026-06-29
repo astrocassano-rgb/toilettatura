@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { BarChart3, Clock, QrCode, ShieldCheck, Wrench, Sparkles, type LucideIcon } from "lucide-react";
@@ -137,12 +137,12 @@ export default function PiattaformaPage() {
                   </li>
                 ))}
               </ul>
-              <a
-                href="mailto:info@dogwash24.it?subject=Prova%20gratuita%2030%20giorni%20—%20DogWash24&body=Buongiorno%2C%20vorrei%20iniziare%20la%20prova%20gratuita%20di%2030%20giorni.%0A%0ANome%20salone%3A%20%0ACittà%3A%20%0ATelefono%3A%20"
+              <Link
+                href="/richiedi-info?plan=START"
                 className="mt-3 block w-full rounded-xl border border-slate-700 py-2.5 text-center text-sm font-semibold text-slate-200 transition-all hover:border-slate-500 hover:bg-slate-800/60"
               >
                 Inizia gratis 30 giorni →
-              </a>
+              </Link>
             </CardContent>
           </Card>
 
@@ -162,12 +162,12 @@ export default function PiattaformaPage() {
                   </li>
                 ))}
               </ul>
-              <a
-                href="mailto:info@dogwash24.it?subject=Richiesta%20offerta%20Noleggio%20%2B%20Update%20DogWash24"
+              <Link
+                href="/richiedi-info?plan=PRO"
                 className="mt-3 block w-full rounded-xl bg-blue-600 py-2.5 text-center text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500"
               >
                 Scegli questo →
-              </a>
+              </Link>
             </CardContent>
           </Card>
 
@@ -187,12 +187,12 @@ export default function PiattaformaPage() {
                   </li>
                 ))}
               </ul>
-              <a
-                href="mailto:info@dogwash24.it?subject=Richiesta%20preventivo%20Piattaforma%20completa%20DogWash24"
+              <Link
+                href="/richiedi-info?plan=ENTERPRISE"
                 className="mt-3 block w-full rounded-xl border border-slate-700 py-2.5 text-center text-sm font-semibold text-slate-200 transition-all hover:border-slate-500 hover:bg-slate-800/60"
               >
                 Richiedi preventivo →
-              </a>
+              </Link>
             </CardContent>
           </Card>
 
