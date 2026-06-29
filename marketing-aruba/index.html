@@ -36,9 +36,9 @@
           "url": "https://dogwash24.it",
           "offers": {
             "@type": "Offer",
-            "price": "150",
+            "price": "29",
             "priceCurrency": "EUR",
-            "description": "Licenza d'uso da 150€/mese"
+            "description": "Licenza d'uso da 29€/mese"
           }
         },
         {
@@ -1429,7 +1429,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="roi-note-icon" style="width: 16px; height: 16px; color: var(--cyan); flex-shrink: 0; margin-top: 2px;">
                 <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>
               </svg>
-              <span>Stima basata su scontrino medio 18€, piano «Noleggio + update» 300€/mese e +34% sessioni da apertura H24 + prenotazioni online.</span>
+              <span>Stima basata su scontrino medio 18€, piano «Noleggio + update» 119€/mese e +34% sessioni da apertura H24 + prenotazioni online.</span>
             </div>
           </div>
           <!-- Results -->
@@ -1690,9 +1690,9 @@
           <!-- Piano 1: Licenza -->
           <div class="pricing-card fade-up">
             <div class="plan-name">Licenza d'uso</div>
-            <div class="plan-tagline">Per chi vuole iniziare con il canone minimo e gestire tutto da solo.</div>
+            <div class="plan-tagline">Early adopter (garantito 2 anni · poi 59€/mese). Per chi vuole iniziare con il canone minimo.</div>
             <div>
-              <span class="plan-price" id="price-1">150€</span><span class="plan-price-period">/mese</span>
+              <span class="plan-price" id="price-1">29€</span><span class="plan-price-period">/mese</span>
             </div>
             <div class="plan-annual-note" id="annual-note-1"></div>
             <ul class="plan-features">
@@ -1712,7 +1712,7 @@
             <div class="plan-name">Noleggio + Update</div>
             <div class="plan-tagline">Zero pensieri: aggiornamenti, supporto e governance release gestiti da noi.</div>
             <div>
-              <span class="plan-price" id="price-2">300€</span><span class="plan-price-period">/mese</span>
+              <span class="plan-price" id="price-2">119€</span><span class="plan-price-period">/mese</span>
             </div>
             <div class="plan-annual-note" id="annual-note-2"></div>
             <ul class="plan-features">
@@ -2018,7 +2018,7 @@
       });
 
       const AVG_TICKET   = 18;
-      const PLATFORM_COST = 300;
+      const PLATFORM_COST = 119;
       const UTIL_BOOST   = 0.34;
       const OB_LOSS      = 0.15;
       const MANUAL_DAYS  = 5;
@@ -2078,14 +2078,14 @@
       document.getElementById('toggle-label-annuale').classList.toggle('active', billingAnnual);
 
       if (billingAnnual) {
-        document.getElementById('price-1').textContent = '125€';
-        document.getElementById('annual-note-1').textContent = '1.500€/anno · risparmi 300€';
-        document.getElementById('price-2').textContent = '250€';
-        document.getElementById('annual-note-2').textContent = '3.000€/anno · risparmi 600€';
+        document.getElementById('price-1').textContent = '24€';
+        document.getElementById('annual-note-1').textContent = '290€/anno · risparmi 58€';
+        document.getElementById('price-2').textContent = '82.5€';
+        document.getElementById('annual-note-2').textContent = '990€/anno · risparmi 438€';
       } else {
-        document.getElementById('price-1').textContent = '150€';
+        document.getElementById('price-1').textContent = '29€';
         document.getElementById('annual-note-1').textContent = '';
-        document.getElementById('price-2').textContent = '300€';
+        document.getElementById('price-2').textContent = '119€';
         document.getElementById('annual-note-2').textContent = '';
       }
     }
@@ -2253,7 +2253,7 @@
       
       text += "--------------------------------------------------\n";
       text += "Stima indicativa basata su scontrino medio 18€, \n";
-      text += "piano «Noleggio + update» 300€/mese e +34% sessioni \n";
+      text += "piano «Noleggio + update» 119€/mese e +34% sessioni \n";
       text += "grazie all'apertura H24 e prenotazioni online.\n";
       text += "I risultati reali possono variare in base alla \n";
       text += "zona geografica, visibilità e concorrenza locale.\n";
