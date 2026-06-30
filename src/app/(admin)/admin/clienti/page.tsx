@@ -42,9 +42,18 @@ export default async function AdminClientiPage({ searchParams }: { searchParams?
     ? sortRaw
     : "bookings_upcoming") as SortKey;
 
-  const { supabase } = await requireAdmin({ next: "/admin/clienti", mode: "notFound" });
+  const { supabase, user } = await requireAdmin({ next: "/admin/clienti", mode: "notFound" });
 
-  const { data } = await supabase
+  const role = (user as any)?.app_metadata?.role;
+  const isSuperAdmin = role === "superadmin";
+
+  let queryClient = supabase;
+  if (isSuperAdmin) {
+    const { createSupabaseAdminClient } = await import("@/lib/supabase/server");
+    queryClient = createSupabaseAdminClient() as any;
+  }
+
+  const { data } = await queryClient
     .from("admin_customers_overview")
     .select("customer_id, email, first_name, last_name, phone, balance_credits, bookings_total, bookings_upcoming, tenant_id, tenant_name, tenant_slug")
     .order(sort, { ascending: false })

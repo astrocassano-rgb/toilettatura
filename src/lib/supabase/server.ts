@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import { getEnv } from "@/lib/env";
 
@@ -91,6 +92,19 @@ export async function getSupabaseForTenant(tenantId: string) {
           // Silent failure in Server Components – session refresh handled elsewhere.
         }
       }
+    }
+  });
+}
+
+export function createSupabaseAdminClient() {
+  const env = getEnv();
+  if (!env || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Variabile d'ambiente SUPABASE_SERVICE_ROLE_KEY mancante.");
+  }
+  return createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
     }
   });
 }
