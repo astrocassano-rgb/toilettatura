@@ -129,7 +129,7 @@ export async function middleware(request: NextRequest) {
       // Verifica l'appartenenza come admin per questo specifico salone
       const { data: tenant } = await (supabase.from("tenants") as any)
         .select("id")
-        .eq("slug", subdomain)
+        .eq("slug", subdomain || "default")
         .maybeSingle();
 
       if (tenant) {
