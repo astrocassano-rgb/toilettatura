@@ -46,7 +46,7 @@ export default async function AdminClientiPage({ searchParams }: { searchParams?
 
   const { data } = await supabase
     .from("admin_customers_overview")
-    .select("customer_id, email, first_name, last_name, phone, balance_credits, bookings_total, bookings_upcoming")
+    .select("customer_id, email, first_name, last_name, phone, balance_credits, bookings_total, bookings_upcoming, tenant_id, tenant_name, tenant_slug")
     .order(sort, { ascending: false })
     .limit(200);
 
@@ -118,8 +118,11 @@ export default async function AdminClientiPage({ searchParams }: { searchParams?
             const fullName = [c.first_name, c.last_name].filter(Boolean).join(" ").trim();
             const label = fullName || c.email || c.customer_id;
             const balance = c.balance_credits ?? 0;
+            const tenantName = (c as any).tenant_name || "Generico";
+            const tenantSlug = (c as any).tenant_slug || "default";
+
             return (
-              <Card key={c.customer_id}>
+              <Card key={`${c.customer_id}-${(c as any).tenant_id}`}>
                 <CardContent className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3 min-w-0">
                     {/* Avatar iniziali */}
@@ -130,7 +133,12 @@ export default async function AdminClientiPage({ searchParams }: { searchParams?
                       {(fullName || c.email || "?").slice(0, 2).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-50 truncate">{label}</p>
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <p className="text-sm font-semibold text-slate-50 truncate">{label}</p>
+                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-800/30">
+                          🏢 {tenantName} ({tenantSlug})
+                        </span>
+                      </div>
                       <p className="text-xs text-slate-400 truncate">
                         {c.email ?? "—"}{c.phone ? ` · ${c.phone}` : ""}
                       </p>
