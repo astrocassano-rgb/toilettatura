@@ -46,32 +46,34 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (subdomain && subdomain !== "default") {
-    // Escludiamo API, static files, auth callback, e le pagine di errore stesse
-    const isPageRequest = !pathname.startsWith("/api") &&
-                          !pathname.startsWith("/_next") &&
-                          !pathname.startsWith("/auth") &&
-                          pathname !== "/salone-errato" &&
-                          pathname !== "/abbonamento-scaduto" &&
-                          !pathname.includes(".");
+  const targetSubdomain = subdomain || "default";
+  
+  // Escludiamo API, static files, auth callback, e le pagine di errore stesse
+  const isPageRequest = !pathname.startsWith("/api") &&
+                        !pathname.startsWith("/_next") &&
+                        !pathname.startsWith("/auth") &&
+                        pathname !== "/salone-errato" &&
+                        pathname !== "/abbonamento-scaduto" &&
+                        !pathname.includes(".");
 
-    if (isPageRequest) {
-      try {
-        const { data: tenant } = await (supabase.from("tenants") as any)
-          .select("id, name, slug, subscription_ends_at")
-          .eq("slug", subdomain)
-          .maybeSingle();
+  if (isPageRequest) {
+    try {
+      const { data: tenant } = await (supabase.from("tenants") as any)
+        .select("id, name, slug, subscription_ends_at")
+        .eq("slug", targetSubdomain)
+        .maybeSingle();
 
-        if (tenant) {
-          // Impostiamo il cookie del tenant corrente sulla response per il client
-          response.cookies.set("current_tenant_id", tenant.id, {
-            path: "/",
-            domain: host.includes("localhost") || host.includes("127.0.0.1") ? undefined : `.${process.env.TENANT_ROOT_DOMAIN || "app.dogwash24.it"}`,
-            httpOnly: false,
-            maxAge: 60 * 60 * 24 * 365,
-          });
+      if (tenant) {
+        // Impostiamo il cookie del tenant corrente sulla response per il client
+        response.cookies.set("current_tenant_id", tenant.id, {
+          path: "/",
+          domain: host.includes("localhost") || host.includes("127.0.0.1") ? undefined : `.${process.env.TENANT_ROOT_DOMAIN || "app.dogwash24.it"}`,
+          httpOnly: false,
+          maxAge: 60 * 60 * 24 * 365,
+        });
 
-          // 1. Verifica Scadenza
+        // 1. Verifica Scadenza (solo per saloni terzi con scadenza, default è sempre attivo)
+        if (targetSubdomain !== "default") {
           const isExpired = tenant.subscription_ends_at
             ? new Date(tenant.subscription_ends_at) < new Date()
             : false;
@@ -83,9 +85,9 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(expiredUrl);
           }
         }
-      } catch (err) {
-        console.error("[Middleware] Errore verifica tenant/scadenza:", err);
       }
+    } catch (err) {
+      console.error("[Middleware] Errore verifica tenant/scadenza:", err);
     }
   }
 
