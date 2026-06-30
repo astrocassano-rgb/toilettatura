@@ -65,9 +65,12 @@ export async function middleware(request: NextRequest) {
 
       if (tenant) {
         // Impostiamo il cookie del tenant corrente sulla response per il client
+        const rootDomain = process.env.TENANT_ROOT_DOMAIN || "dogwash24.it";
+        const isStandardDomain = host.endsWith(rootDomain);
+
         response.cookies.set("current_tenant_id", tenant.id, {
           path: "/",
-          domain: host.includes("localhost") || host.includes("127.0.0.1") ? undefined : `.${process.env.TENANT_ROOT_DOMAIN || "app.dogwash24.it"}`,
+          domain: isStandardDomain ? `.${rootDomain}` : undefined,
           httpOnly: false,
           maxAge: 60 * 60 * 24 * 365,
         });
