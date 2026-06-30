@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
-import { CreditCard, CalendarDays, PawPrint, LogIn, Mail, Lock, UserPlus, Apple, CheckCircle2 } from "lucide-react";
+import { CreditCard, CalendarDays, PawPrint, LogIn, Mail, Lock, UserPlus, Apple, CheckCircle2, BellRing, BellOff } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,11 @@ export default function HomeClient() {
   const [upcoming, setUpcoming] = useState<Booking[]>([]);
   const [dogNames, setDogNames] = useState<Record<string, string>>({});
   const [stationNames, setStationNames] = useState<Record<string, string>>({});
+
+  // Lista d'attesa del cliente
+  type WaitlistEntry = { id: string; date: string; service_type: string; status: string };
+  const [waitlistEntries, setWaitlistEntries] = useState<WaitlistEntry[]>([]);
+  const [removingWaitlist, setRemovingWaitlist] = useState<string | null>(null);
 
   // Stati per il form di autenticazione integrato
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
@@ -207,7 +212,7 @@ export default function HomeClient() {
     async function loadDashboard() {
       if (!supabase || !userId) return;
 
-      const [{ data: wallet }, { data: bookings }] = await Promise.all([
+      const [{ data: wallet }, { data: bookings }, { data: waitlist }] = await Promise.all([
         supabase.from("wallets").select("balance_credits").eq("customer_id", userId).maybeSingle(),
         supabase
           .from("bookings")
@@ -216,11 +221,19 @@ export default function HomeClient() {
           .in("status", ["PENDING", "CONFIRMED"])
           .gte("start_time", new Date().toISOString())
           .order("start_time", { ascending: true })
-          .limit(5)
+          .limit(5),
+        (supabase as any).from("booking_waitlist")
+          .select("id, date, service_type, status")
+          .eq("customer_id", userId)
+          .in("status", ["WAITING", "NOTIFIED"])
+          .gte("date", new Date().toISOString().slice(0, 10))
+          .order("date", { ascending: true })
+          .limit(10),
       ]);
 
       setBalanceCredits(wallet?.balance_credits ?? 0);
       setUpcoming(bookings ?? []);
+      setWaitlistEntries((waitlist ?? []) as WaitlistEntry[]);
 
       const dogIds = Array.from(new Set((bookings ?? []).map((b) => b.dog_id))).filter(Boolean);
       const stationIds = Array.from(new Set((bookings ?? []).map((b) => b.station_id))).filter(Boolean);
@@ -241,6 +254,20 @@ export default function HomeClient() {
 
     void loadDashboard();
   }, [supabase, userId]);
+
+  const handleRemoveFromWaitlist = async (waitlistId: string) => {
+    setRemovingWaitlist(waitlistId);
+    try {
+      await fetch("/api/waitlist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ waitlist_id: waitlistId }),
+      });
+      setWaitlistEntries((prev) => prev.filter((e) => e.id !== waitlistId));
+    } finally {
+      setRemovingWaitlist(null);
+    }
+  };
 
   if (loading) {
     return <div className="p-4 text-center text-sm text-slate-400">Caricamento in corso...</div>;
@@ -510,6 +537,72 @@ export default function HomeClient() {
           </Card>
         )}
       </section>
+
+      {/* ── SEZIONE LISTA D'ATTESA ── */}
+      {waitlistEntries.length > 0 && (
+        <section className="pt-2">
+          <div className="flex items-center gap-2 mb-3">
+            <BellRing className="h-4 w-4 text-amber-400" />
+            <h3 className="font-medium">Le mie liste d&apos;attesa</h3>
+          </div>
+          <div className="grid gap-2">
+            {waitlistEntries.map((entry) => {
+              const dateLabel = new Date(entry.date + "T12:00:00").toLocaleDateString("it-IT", {
+                weekday: "short", day: "2-digit", month: "short"
+              });
+              const serviceLabel = entry.service_type === "FULL_GROOMING"
+                ? "Toelettatura Completa"
+                : entry.service_type === "ASSISTED_WASH"
+                ? "Lavaggio Assistito"
+                : "Self-Service";
+              const isNotified = entry.status === "NOTIFIED";
+
+              return (
+                <Card key={entry.id} className={isNotified ? "border-blue-500/30 bg-blue-950/10" : "border-amber-500/20 bg-amber-950/5"}>
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          {isNotified ? (
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-300 px-2 py-0.5 rounded-full ring-1 ring-inset ring-blue-500/20">
+                              Posto Libero!
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded-full ring-1 ring-inset ring-amber-500/20">
+                              In attesa
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm font-semibold text-slate-100">{dateLabel}</p>
+                        <p className="text-xs text-slate-400">{serviceLabel}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isNotified && (
+                          <Link
+                            href={`/prenota?day=${entry.date}&service_type=${entry.service_type}` as Route}
+                            className="rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-2 transition-all"
+                          >
+                            Prenota ora
+                          </Link>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => void handleRemoveFromWaitlist(entry.id)}
+                          disabled={removingWaitlist === entry.id}
+                          className="rounded-xl bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-slate-200 p-2 transition-all cursor-pointer"
+                          title="Rimuovimi dalla coda"
+                        >
+                          <BellOff className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

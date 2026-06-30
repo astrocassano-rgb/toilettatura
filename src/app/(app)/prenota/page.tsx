@@ -24,6 +24,8 @@ import {
   AlertCircle, 
   X,
   Check,
+  BellRing,
+  BellOff,
   type LucideIcon 
 } from "lucide-react";
 import { 
@@ -150,6 +152,15 @@ export default function PrenotaPage() {
   const [paramsRestored, setParamsRestored] = useState(false);
   const [isFirstServiceSync, setIsFirstServiceSync] = useState(true);
 
+  // Stati lista d'attesa
+  const [waitlistInQueue, setWaitlistInQueue] = useState(false);
+  const [waitlistId, setWaitlistId] = useState<string | null>(null);
+  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [waitlistMessage, setWaitlistMessage] = useState<string | null>(null);
+  // Set di chiavi giorno per cui l'utente è in coda (per badge calendario)
+  const [myWaitlistDays, setMyWaitlistDays] = useState<Set<string>>(new Set());
+
   const serviceType = selectedService?.booking_type ?? "SELF_SERVICE";
 
   // Cane selezionato
@@ -227,6 +238,21 @@ export default function PrenotaPage() {
   const availableDaysSet = useMemo(() => {
     return new Set(weekTimeWindows.filter((w) => w.available).map((w) => w.key));
   }, [weekTimeWindows]);
+
+  // Giorni completamente pieni: disponibilità caricata, postazioni esistono, ma 0 slot liberi
+  const fullDaysSet = useMemo(() => {
+    if (!availabilityLoaded) return new Set<string>();
+    return new Set(
+      weekTimeWindows
+        .filter((w) => !w.available && stationsForService.length > 0)
+        .map((w) => w.key)
+        .filter((key) => {
+          // Escludiamo i giorni già passati
+          const today = ymd(new Date());
+          return key >= today;
+        })
+    );
+  }, [weekTimeWindows, availabilityLoaded, stationsForService]);
 
   const suggestedDayKey = useMemo(() => {
     return weekTimeWindows.find((day) => day.available)?.key ?? weekTimeWindows[0]?.key ?? ymd(calendarStart);
@@ -563,7 +589,94 @@ export default function PrenotaPage() {
 
   const handleSelectDay = (key: string) => {
     setPreviewDayKey(key);
+    setWaitlistMessage(null);
     setIsTimeSlotsModalOpen(true);
+    // Controlla se l'utente è già in lista d'attesa per questo giorno
+    if (isLogged && serviceType) {
+      void checkWaitlistStatus(key, serviceType);
+    }
+  };
+
+  // Controlla lo status waitlist per un giorno specifico
+  const checkWaitlistStatus = async (date: string, svcType: string) => {
+    try {
+      const res = await fetch(`/api/waitlist?date=${date}&service_type=${svcType}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setWaitlistInQueue(data.inQueue ?? false);
+      setWaitlistId(data.waitlistId ?? null);
+      setWaitlistPosition(data.position ?? null);
+    } catch { /* silenzioso */ }
+  };
+
+  // Iscriviti alla lista d'attesa
+  const handleJoinWaitlist = async () => {
+    if (!isLogged) {
+      const params = new URLSearchParams({ services: serializeServiceBundle(selectedServices), day: dayKey });
+      router.push(`/login?next=${encodeURIComponent(`/prenota?${params.toString()}`)}` as any);
+      return;
+    }
+    setWaitlistLoading(true);
+    setWaitlistMessage(null);
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: dayKey,
+          service_type: serviceType,
+          dog_id: selectedDogId || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 409) {
+          setWaitlistMessage("Sei già in lista d'attesa per questo giorno!");
+          setWaitlistInQueue(true);
+        } else {
+          setWaitlistMessage(data.error ?? "Errore durante l'iscrizione.");
+        }
+        return;
+      }
+      setWaitlistInQueue(true);
+      setWaitlistId(data.waitlistId);
+      setWaitlistPosition(data.position);
+      setWaitlistMessage(`✅ Sei in lista d'attesa (posizione ${data.position})! Ti avviseremo via WhatsApp appena si libera un posto.`);
+      // Aggiorna il set di giorni in coda per il badge del calendario
+      setMyWaitlistDays((prev) => new Set([...prev, dayKey]));
+    } catch (err: any) {
+      setWaitlistMessage(err?.message ?? "Errore durante l'iscrizione.");
+    } finally {
+      setWaitlistLoading(false);
+    }
+  };
+
+  // Rimuoviti dalla lista d'attesa
+  const handleLeaveWaitlist = async () => {
+    if (!waitlistId) return;
+    setWaitlistLoading(true);
+    setWaitlistMessage(null);
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ waitlist_id: waitlistId }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setWaitlistMessage(data.error ?? "Errore durante la rimozione.");
+        return;
+      }
+      setWaitlistInQueue(false);
+      setWaitlistId(null);
+      setWaitlistPosition(null);
+      setWaitlistMessage("Rimosso dalla lista d'attesa.");
+      setMyWaitlistDays((prev) => { const next = new Set(prev); next.delete(dayKey); return next; });
+    } catch (err: any) {
+      setWaitlistMessage(err?.message ?? "Errore durante la rimozione.");
+    } finally {
+      setWaitlistLoading(false);
+    }
   };
 
   const { calendarYear, calendarMonth } = useMemo(() => {
@@ -1059,7 +1172,10 @@ export default function PrenotaPage() {
                       const isBeforeStart = cellKey < ymd(calendarStart);
                       const isAfterEnd = cellKey > calendarEndKey;
                       const isAvailable = availableDaysSet.has(cellKey);
-                      const isDisabled = isBeforeStart || isAfterEnd || !isAvailable;
+                      const isDayFull = !isAvailable && fullDaysSet.has(cellKey);
+                      const isInMyQueue = myWaitlistDays.has(cellKey);
+                      // I giorni pieni sono cliccabili (per iscriversi alla waitlist)
+                      const isDisabled = isBeforeStart || isAfterEnd || (!isAvailable && !isDayFull);
                       const isSelected = cellKey === dayKey;
                       const isToday = cellKey === ymd(new Date());
 
@@ -1075,7 +1191,14 @@ export default function PrenotaPage() {
                           className={cn(
                             "aspect-square w-full text-xs rounded-2xl flex flex-col items-center justify-between p-1.5 transition-all relative cursor-pointer border",
                             isSelected
-                              ? "bg-blue-600/20 border-blue-500 text-slate-50 font-bold shadow-[0_0_15px_rgba(59,130,246,0.15)] scale-105"
+                              ? isDayFull
+                                ? "bg-amber-500/15 border-amber-500/60 text-amber-200 font-bold shadow-[0_0_15px_rgba(245,158,11,0.12)] scale-105"
+                                : "bg-blue-600/20 border-blue-500 text-slate-50 font-bold shadow-[0_0_15px_rgba(59,130,246,0.15)] scale-105"
+                              : isDayFull
+                              ? cn(
+                                  "bg-amber-500/5 border-amber-500/20 text-amber-300 hover:bg-amber-500/10 hover:border-amber-500/40",
+                                  !isCurrentMonth && "opacity-30"
+                                )
                               : isToday && !isDisabled
                               ? "bg-slate-900 border-cyan-500/40 text-cyan-400 font-bold hover:bg-slate-850"
                               : !isDisabled
@@ -1090,9 +1213,19 @@ export default function PrenotaPage() {
                           )}
                         >
                           <span className="text-[11px] font-black">{day.getDate()}</span>
-                          {availableSlotsCount > 0 && !isDisabled && (
+                          {availableSlotsCount > 0 && !isDisabled && !isDayFull && (
                             <span className="text-[8px] font-extrabold text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20 scale-90 tracking-tighter max-w-full truncate">
                               {availableSlotsCount} liberi
+                            </span>
+                          )}
+                          {isDayFull && isInMyQueue && (
+                            <span className="text-[7px] font-extrabold text-violet-400 bg-violet-500/10 px-1 py-0.5 rounded border border-violet-500/20 scale-90 tracking-tighter max-w-full truncate">
+                              In coda
+                            </span>
+                          )}
+                          {isDayFull && !isInMyQueue && (
+                            <span className="text-[7px] font-extrabold text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20 scale-90 tracking-tighter max-w-full truncate">
+                              Pieno
                             </span>
                           )}
                         </button>
@@ -1173,7 +1306,8 @@ export default function PrenotaPage() {
                     const isBeforeStart = cellKey < ymd(calendarStart);
                     const isAfterEnd = cellKey > calendarEndKey;
                     const isAvailable = availableDaysSet.has(cellKey);
-                    const isDisabled = isBeforeStart || isAfterEnd || !isAvailable;
+                    const isDayFull = !isAvailable && fullDaysSet.has(cellKey);
+                    const isDisabled = isBeforeStart || isAfterEnd || (!isAvailable && !isDayFull);
                     const isSelected = cellKey === dayKey;
                     const isToday = cellKey === ymd(new Date());
 
@@ -1189,7 +1323,11 @@ export default function PrenotaPage() {
                         className={cn(
                           "aspect-square w-full text-xs rounded-2xl flex flex-col items-center justify-between p-1.5 transition-all relative cursor-pointer border",
                           isSelected
-                            ? "bg-blue-600/20 border-blue-500 text-slate-50 font-bold shadow-[0_0_15px_rgba(59,130,246,0.15)] scale-105"
+                            ? isDayFull
+                              ? "bg-amber-500/15 border-amber-500/60 text-amber-200 font-bold scale-105"
+                              : "bg-blue-600/20 border-blue-500 text-slate-50 font-bold shadow-[0_0_15px_rgba(59,130,246,0.15)] scale-105"
+                            : isDayFull
+                            ? cn("bg-amber-500/5 border-amber-500/20 text-amber-300 hover:bg-amber-500/10", !isCurrentMonth && "opacity-30")
                             : isToday && !isDisabled
                             ? "bg-slate-900 border-cyan-500/40 text-cyan-400 font-bold hover:bg-slate-850"
                             : !isDisabled
@@ -1204,9 +1342,14 @@ export default function PrenotaPage() {
                         )}
                       >
                         <span className="text-[11px] font-black">{day.getDate()}</span>
-                        {availableSlotsCount > 0 && !isDisabled && (
+                        {availableSlotsCount > 0 && !isDisabled && !isDayFull && (
                           <span className="text-[8px] font-extrabold text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20 scale-90 tracking-tighter max-w-full truncate">
                             {availableSlotsCount} liberi
+                          </span>
+                        )}
+                        {isDayFull && (
+                          <span className="text-[7px] font-extrabold text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20 scale-90 tracking-tighter max-w-full truncate">
+                            Pieno
                           </span>
                         )}
                       </button>
@@ -1287,47 +1430,107 @@ export default function PrenotaPage() {
               {/* Griglia slot */}
               <div className="pt-1">
                 {daySlotsInfo.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {daySlotsInfo.map((slot) => {
-                      if (slot.isAvailable) {
-                        return (
-                          <button
-                            key={slot.time}
-                            type="button"
-                            onClick={() => {
-                              setIsTimeSlotsModalOpen(false);
-                              handleSlotClick(slot);
-                            }}
-                            className="group block rounded-2xl p-2.5 text-center transition-all duration-200 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 ring-1 ring-inset ring-blue-500/20 hover:ring-blue-500/40 hover:from-blue-500/15 hover:to-cyan-500/10 cursor-pointer shadow-[0_4px_12px_rgba(59,130,246,0.05)] active:scale-98 text-left w-full"
-                          >
-                            <p className="text-xs font-bold text-slate-100 group-hover:text-blue-200 transition-colors text-center">
-                              {slot.time}
-                            </p>
-                            <p className="text-[9px] font-semibold text-emerald-400 mt-0.5 text-center">
-                              Libero
-                            </p>
-                            <div className="mt-1.5 text-[8px] font-bold text-slate-100 uppercase tracking-wider bg-blue-600/30 rounded-lg py-0.5 px-2 ring-1 ring-inset ring-blue-400/30 text-center">
-                              Prenota
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      {daySlotsInfo.map((slot) => {
+                        if (slot.isAvailable) {
+                          return (
+                            <button
+                              key={slot.time}
+                              type="button"
+                              onClick={() => {
+                                setIsTimeSlotsModalOpen(false);
+                                handleSlotClick(slot);
+                              }}
+                              className="group block rounded-2xl p-2.5 text-center transition-all duration-200 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 ring-1 ring-inset ring-blue-500/20 hover:ring-blue-500/40 hover:from-blue-500/15 hover:to-cyan-500/10 cursor-pointer shadow-[0_4px_12px_rgba(59,130,246,0.05)] active:scale-98 text-left w-full"
+                            >
+                              <p className="text-xs font-bold text-slate-100 group-hover:text-blue-200 transition-colors text-center">
+                                {slot.time}
+                              </p>
+                              <p className="text-[9px] font-semibold text-emerald-400 mt-0.5 text-center">
+                                Libero
+                              </p>
+                              <div className="mt-1.5 text-[8px] font-bold text-slate-100 uppercase tracking-wider bg-blue-600/30 rounded-lg py-0.5 px-2 ring-1 ring-inset ring-blue-400/30 text-center">
+                                Prenota
+                              </div>
+                            </button>
+                          );
+                        } else {
+                          return (
+                            <div
+                              key={slot.time}
+                              className="rounded-2xl p-2.5 text-center bg-slate-950/40 ring-1 ring-inset ring-slate-900/60 opacity-40 select-none flex flex-col justify-between h-full min-h-[70px]"
+                            >
+                              <p className="text-xs font-bold text-slate-500 line-through">
+                                {slot.time}
+                              </p>
+                              <p className="text-[9px] font-semibold text-slate-400 mt-0.5">
+                                {slot.isPast ? "Passato" : "Occupato"}
+                              </p>
                             </div>
-                          </button>
-                        );
-                      } else {
-                        return (
-                          <div
-                            key={slot.time}
-                            className="rounded-2xl p-2.5 text-center bg-slate-950/40 ring-1 ring-inset ring-slate-900/60 opacity-40 select-none flex flex-col justify-between h-full min-h-[70px]"
-                          >
-                            <p className="text-xs font-bold text-slate-500 line-through">
-                              {slot.time}
-                            </p>
-                            <p className="text-[9px] font-semibold text-slate-400 mt-0.5">
-                              {slot.isPast ? "Passato" : "Occupato"}
+                          );
+                        }
+                      })}
+                    </div>
+
+                    {/* ── PANNELLO LISTA D'ATTESA (se il giorno è pieno) ── */}
+                    {isLogged && fullDaysSet.has(dayKey) && daySlotsInfo.every((s) => !s.isAvailable) && (
+                      <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
+                        <div className="flex items-start gap-2.5">
+                          <div className="rounded-xl bg-amber-500/10 p-1.5 ring-1 ring-inset ring-amber-500/20 shrink-0">
+                            <BellRing className="h-4 w-4 text-amber-400" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-bold text-amber-300">Giornata Completa</p>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                              Tutti gli slot sono occupati. Iscriviti alla lista d&apos;attesa: ti avviseremo via WhatsApp se si libera un posto.
                             </p>
                           </div>
-                        );
-                      }
-                    })}
-                  </div>
+                        </div>
+
+                        {waitlistMessage && (
+                          <div className={cn(
+                            "rounded-xl px-3 py-2 text-[11px] font-medium",
+                            waitlistInQueue
+                              ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                              : "bg-red-500/10 text-red-300 border border-red-500/20"
+                          )}>
+                            {waitlistMessage}
+                          </div>
+                        )}
+
+                        {waitlistInQueue ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-emerald-400 font-semibold">✓ In lista d&apos;attesa</span>
+                              {waitlistPosition && (
+                                <span className="text-slate-400">Posizione {waitlistPosition}</span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => void handleLeaveWaitlist()}
+                              disabled={waitlistLoading}
+                              className="w-full rounded-xl bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-semibold py-2 cursor-pointer transition-all flex items-center justify-center gap-1.5"
+                            >
+                              <BellOff className="h-3.5 w-3.5" />
+                              {waitlistLoading ? "In corso..." : "Rimuovimi dalla coda"}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleJoinWaitlist()}
+                            disabled={waitlistLoading}
+                            className="w-full rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold py-2.5 cursor-pointer transition-all flex items-center justify-center gap-2"
+                          >
+                            <BellRing className="h-3.5 w-3.5" />
+                            {waitlistLoading ? "Iscrizione in corso..." : "Mettimi in lista d'attesa"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="py-8 text-center text-slate-400 text-sm">
                     Caricamento slot orari...
